@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% block title %}대시보드 · Workit{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-title">대시보드</h1>
+  <p class="page-desc">프로젝트 현황을 한눈에 확인하세요</p>
+</div>
+
+<!-- Stats Cards -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-info">
+      <span class="stat-label">전체 프로젝트</span>
+      <span class="stat-value">{{ total }}</span>
+    </div>
+    <div class="stat-icon stat-icon--blue">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-info">
+      <span class="stat-label">계약 진행중</span>
+      <span class="stat-value">{{ in_review }}</span>
+    </div>
+    <div class="stat-icon stat-icon--orange">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-info">
+      <span class="stat-label">프로젝트 이행중</span>
+      <span class="stat-value">{{ in_progress }}</span>
+    </div>
+    <div class="stat-icon stat-icon--purple">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-info">
+      <span class="stat-label">완료</span>
+      <span class="stat-value">{{ completed }}</span>
+    </div>
+    <div class="stat-icon stat-icon--green">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    </div>
+  </div>
+</div>
+
+<!-- Calendar + Lists -->
+<div class="dashboard-grid">
+  <!-- Mini Calendar -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">일정</h2>
+    </div>
+    <div class="mini-calendar" id="miniCalendar"></div>
+  </div>
+
+  <!-- Right Column -->
+  <div class="dashboard-lists">
+    <!-- Contract Review List -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">계약 검토 목록</h2>
+        <a href="{% url 'contract_list' %}" class="card-link">전체보기</a>
+      </div>
+      {% if recent_contracts %}
+        <ul class="item-list">
+          {% for c in recent_contracts %}
+          <li class="item-row" onclick="location.href='{% url 'contract_list' %}'">
+            <div class="item-main">
+              <span class="item-title">{{ c.project_name }}</span>
+              <span class="item-sub">{{ c.company_name }}</span>
+            </div>
+            <span class="badge badge--{{ c.status }}">{{ c.get_status_display }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="empty-msg">등록된 계약이 없습니다.</p>
+      {% endif %}
+    </div>
+
+    <!-- Performance List -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">이행 현황 목록</h2>
+        <a href="{% url 'performance_list' %}" class="card-link">전체보기</a>
+      </div>
+      {% if recent_performances %}
+        <ul class="item-list">
+          {% for p in recent_performances %}
+          <li class="item-row" onclick="location.href='{% url 'performance_list' %}'">
+            <div class="item-main">
+              <span class="item-title">{{ p.contract.project_name }}</span>
+              <span class="item-sub">{{ p.contract.company_name }}</span>
+            </div>
+            <span class="badge badge--in_progress">이행중</span>
+          </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="empty-msg">이행중인 프로젝트가 없습니다.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Mini calendar
+  (function() {
+    const el = document.getElementById('miniCalendar');
+    if (!el) return;
+    const today = new Date();
+    let year = today.getFullYear(), month = today.getMonth();
+    function render() {
+      const first = new Date(year, month, 1).getDay();
+      const days = new Date(year, month + 1, 0).getDate();
+      const months = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+      let html = `<div class="cal-nav"><button onclick="prevMonth()">&#8249;</button><span>${year}년 ${months[month]}</span><button onclick="nextMonth()">&#8250;</button></div>`;
+      html += '<div class="cal-grid"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>';
+      for (let i = 0; i < first; i++) html += '<span></span>';
+      for (let d = 1; d <= days; d++) {
+        const isToday = d === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+        html += `<span class="cal-day${isToday ? ' today' : ''}">${d}</span>`;
+      }
+      html += '</div>';
+      el.innerHTML = html;
+    }
+    window.prevMonth = () => { month--; if (month < 0) { month = 11; year--; } render(); };
+    window.nextMonth = () => { month++; if (month > 11) { month = 0; year++; } render(); };
+    render();
+  })();
+</script>
+{% endblock %}

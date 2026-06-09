@@ -37,6 +37,9 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "accounts",
+    "contracts",
+    "performance",
 ]
 
 MIDDLEWARE = [
@@ -54,7 +57,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -109,6 +112,17 @@ TIME_ZONE = 'Asia/Seoul'
 USE_I18N = True
 
 USE_TZ = True
+
+# 추가
+AUTH_USER_MODEL = 'accounts.User'
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/'
+
+STATIC_URL = "static/"
+STATICFILES_DIRS = [BASE_DIR / "static"]  # 추가
+
+MEDIA_URL = '/media/'                      # 추가
+MEDIA_ROOT = BASE_DIR / 'media'            # 추가
 
 
 # Static files (CSS, JavaScript, Images)

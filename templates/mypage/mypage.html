@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+{% block title %}마이페이지 · Workit{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">마이페이지</h1>
+    <p class="page-desc">내 정보를 확인하고 수정할 수 있습니다</p>
+  </div>
+</div>
+
+<div class="mypage-layout">
+  <!-- 상단: 프로필 카드 + 기본 정보 -->
+  <div class="mypage-top">
+  <!-- Profile Card -->
+  <div class="profile-card">
+    <div class="profile-avatar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </div>
+    <h2 class="profile-name">{{ user.korean_name }}</h2>
+    <p class="profile-dept">{{ user.department }}</p>
+    <p class="profile-position">{{ user.position }}</p>
+  </div>
+
+  <!-- Info Card -->
+  <div class="info-card card">
+    <div class="card-header">
+      <h2 class="card-title">기본 정보</h2>
+      <button class="btn btn-primary" id="btnEdit" onclick="toggleEdit()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        수정
+      </button>
+    </div>
+
+    <form id="mypageForm">
+      {% csrf_token %}
+      <div class="info-grid">
+        <div class="info-field">
+          <label class="info-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            이름
+          </label>
+          <div class="info-value" id="view_name">{{ user.korean_name }}</div>
+          <div class="info-edit" style="display:none">
+            <input type="text" name="last_name" class="form-input form-input--sm" value="{{ user.last_name }}" placeholder="성">
+            <input type="text" name="first_name" class="form-input form-input--sm" value="{{ user.first_name }}" placeholder="이름">
+          </div>
+        </div>
+
+        <div class="info-field">
+          <label class="info-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            이메일
+          </label>
+          <div class="info-value" id="view_email">{{ user.email|default:'-' }}</div>
+          <input type="email" name="email" class="form-input form-input--sm info-edit" style="display:none" value="{{ user.email }}">
+        </div>
+
+        <div class="info-field">
+          <label class="info-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.18 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6.29 6.29l.94-.94a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            전화번호
+          </label>
+          <div class="info-value" id="view_phone">{{ user.phone|default:'-' }}</div>
+          <input type="text" name="phone" class="form-input form-input--sm info-edit" style="display:none" value="{{ user.phone }}">
+        </div>
+
+        <div class="info-field">
+          <label class="info-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+            부서
+          </label>
+          <div class="info-value" id="view_department">{{ user.department|default:'-' }}</div>
+          <input type="text" name="department" class="form-input form-input--sm info-edit" style="display:none" value="{{ user.department }}">
+        </div>
+
+        <div class="info-field">
+          <label class="info-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            직급
+          </label>
+          <div class="info-value" id="view_position">{{ user.position|default:'-' }}</div>
+          <input type="text" name="position" class="form-input form-input--sm info-edit" style="display:none" value="{{ user.position }}">
+        </div>
+
+        <div class="info-field">
+          <label class="info-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+            소속기관
+          </label>
+          <div class="info-value" id="view_organization">{{ user.organization|default:'-' }}</div>
+          <input type="text" name="organization" class="form-input form-input--sm info-edit" style="display:none" value="{{ user.organization }}">
+        </div>
+      </div>
+
+      <div id="editActions" style="display:none;margin-top:20px;display:none">
+        <button type="button" class="btn btn-ghost" onclick="cancelEdit()">취소</button>
+        <button type="button" class="btn btn-primary" onclick="saveProfile()">저장</button>
+      </div>
+    </form>
+  </div>
+
+  </div><!-- /mypage-top -->
+
+  <!-- 하단: 계정 설정 (전체 너비) -->
+  <div class="card settings-card">
+    <div class="card-header">
+      <h2 class="card-title">계정 설정</h2>
+    </div>
+    <div class="settings-list">
+      <div class="settings-item">
+        <div>
+          <span class="settings-label">비밀번호 변경</span>
+          <span class="settings-desc">정기적인 비밀번호 변경을 권장합니다</span>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="alert('비밀번호 변경 기능은 시스템 관리자에게 문의하세요.')">변경</button>
+      </div>
+      <div class="settings-item">
+        <div>
+          <span class="settings-label">알림 설정</span>
+          <span class="settings-desc">산출물 제출 마감 알림을 받습니다</span>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" checked>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="settings-item">
+        <div>
+          <span class="settings-label">로그아웃</span>
+          <span class="settings-desc">현재 세션을 종료합니다</span>
+        </div>
+        <a href="{% url 'logout' %}" class="btn btn-ghost btn-sm">로그아웃</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let isEditing = false;
+
+function toggleEdit() {
+  isEditing = !isEditing;
+  document.querySelectorAll('.info-value').forEach(el => el.style.display = isEditing ? 'none' : '');
+  document.querySelectorAll('.info-edit').forEach(el => el.style.display = isEditing ? '' : 'none');
+  document.getElementById('editActions').style.display = isEditing ? 'flex' : 'none';
+  document.getElementById('btnEdit').innerHTML = isEditing
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> 취소'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> 수정';
+  if (!isEditing) isEditing = false;
+}
+
+function cancelEdit() {
+  isEditing = true;
+  toggleEdit();
+}
+
+function saveProfile() {
+  const form = document.getElementById('mypageForm');
+  const fd = new FormData(form);
+  fetch('{% url "mypage_update" %}', {
+    method: 'POST',
+    body: fd,
+    headers: {'X-CSRFToken': getCsrf()},
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.status === 'ok') {
+      alert(data.message);
+      location.reload();
+    }
+  });
+}
+</script>
+{% endblock %}

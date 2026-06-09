@@ -1,0 +1,465 @@
+{% extends 'base.html' %}
+{% block title %}이행관리 · Workit{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">이행관리</h1>
+    <p class="page-desc">계약 체결 이후 산출물 제출 일정을 관리하고, 단계별 이행 현황을 점검합니다.</p>
+  </div>
+  <div class="header-search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" class="search-input" placeholder="프로젝트 · 업체 · 문서 검색" id="searchInput" oninput="filterPerformances(this.value)">
+  </div>
+</div>
+
+<div class="performance-layout">
+  <!-- Calendar -->
+  <div class="card perf-calendar-card">
+    <div class="card-header">
+      <div>
+        <h2 class="card-title">이행 일정</h2>
+        <p class="card-desc">산출물 제출 기간 (프로젝트별 색상)</p>
+      </div>
+    </div>
+    <div class="perf-calendar" id="perfCalendar"></div>
+    <div class="calendar-legend" id="calendarLegend"></div>
+  </div>
+
+  <!-- Performance List -->
+  <div class="card perf-list-card">
+    <div class="card-header">
+      <div>
+        <h2 class="card-title">이행 현황</h2>
+        <span class="card-sub">최근순</span>
+      </div>
+      <label class="checkbox-label">
+        <input type="checkbox" id="chkShowCompleted" onchange="toggleCompleted(this.checked)">
+        <span>완료 포함</span>
+      </label>
+    </div>
+    <ul class="perf-list" id="perfList">
+      {% for perf in performances %}
+      <li class="perf-item" data-id="{{ perf.id }}" data-status="{{ perf.contract.status }}" onclick="openPerfDetail({{ perf.id }})">
+        <div class="perf-item-accent" style="background: {{ project_colors|default:'' }};"></div>
+        <div class="perf-item-body">
+          <div class="perf-item-top">
+            <span class="perf-item-name">{{ perf.contract.project_name }}</span>
+            <span class="badge badge--{{ perf.contract.status }}">{{ perf.contract.get_status_display }}</span>
+          </div>
+          <div class="perf-item-meta">
+            <span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+              {{ perf.contract.company_name }}
+            </span>
+            {% if perf.contract.budget %}
+            <span>{{ perf.contract.budget }}</span>
+            {% endif %}
+          </div>
+          <div class="perf-progress-bar">
+            <div class="perf-progress-fill" style="width: {% widthratio perf.progress_count 4 100 %}%"></div>
+          </div>
+          <div class="perf-progress-label">
+            <span>{{ perf.progress_count }}/4 완료</span>
+            {% with next_del=perf.deliverables.first %}
+            {% if next_del and next_del.status == 'pending' %}
+            <span>다음: {{ next_del.get_deliverable_type_display }}</span>
+            {% endif %}
+            {% endwith %}
+          </div>
+        </div>
+      </li>
+      {% empty %}
+      <li class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <p>이행 중인 프로젝트가 없습니다.</p>
+        <a href="{% url 'contract_list' %}" class="btn btn-primary">계약관리로 이동</a>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+
+<!-- Performance Detail Modal -->
+<div class="modal-overlay" id="modalPerfDetail" style="display:none">
+  <div class="modal modal--lg">
+    <div class="modal-header">
+      <div>
+        <h3 class="modal-title" id="perfDetailName">-</h3>
+        <p class="modal-desc" id="perfDetailMeta">-</p>
+      </div>
+      <button class="modal-close" onclick="closeModal('modalPerfDetail')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div id="perfDetailBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modalPerfDetail')">닫기</button>
+      <button class="btn btn-ghost" id="btnDownloadAll">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        전체 산출물 내려받기
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- File Change Modal -->
+<div class="modal-overlay" id="modalFileChange" style="display:none">
+  <div class="modal modal--sm">
+    <div class="modal-header">
+      <h3 class="modal-title">파일 변경</h3>
+      <button class="modal-close" onclick="closeModal('modalFileChange')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <form id="formFileChange">
+      <input type="hidden" id="fcPerfId">
+      <input type="hidden" id="fcType">
+      <div class="form-group">
+        <label class="form-label" id="fcLabel">파일 선택</label>
+        <div class="file-upload-zone" onclick="document.getElementById('fcFile').click()" id="fcZone">
+          <input type="file" id="fcFile" style="display:none" onchange="showFileName(this,'fcZone')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <p class="upload-text">파일 선택 또는 끌어다 놓기</p>
+          <p class="upload-hint">PDF · HWP · DOCX · XLSX (최대 50MB)</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('modalFileChange')">취소</button>
+        <button type="button" class="btn btn-primary" onclick="submitFileChange()">변경</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CALENDAR_EVENTS = {{ calendar_events_json|safe }};
+let currentPerfId = null;
+
+// ── Calendar ──
+(function() {
+  const el = document.getElementById('perfCalendar');
+  if (!el) return;
+  const today = new Date();
+  let year = today.getFullYear(), month = today.getMonth();
+  const MONTHS = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+
+  function ymd(dateStr) { return dateStr ? dateStr.replace(/-/g,'') : ''; }
+  function cellYMD(y, m, d) {
+    return `${y}${String(m+1).padStart(2,'0')}${String(d).padStart(2,'0')}`;
+  }
+  function inRange(y, m, d, s, e) {
+    const c = cellYMD(y, m, d);
+    return c >= ymd(s) && c <= ymd(e);
+  }
+
+  function render() {
+    const firstDow = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    // 전체 날짜 배열 (빈칸=null 포함)
+    const cells = [];
+    for (let i = 0; i < firstDow; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+    // 6주 채우기
+    while (cells.length % 7 !== 0) cells.push(null);
+
+    // 현재 월에 걸치는 이벤트만 필터
+    const activeEvents = CALENDAR_EVENTS.filter(ev => {
+      // start_date 또는 end_date 중 하나라도 이번 달에 걸치면 포함
+      const monthStart = cellYMD(year, month, 1);
+      const monthEnd   = cellYMD(year, month, daysInMonth);
+      return ymd(ev.end_date) >= monthStart && ymd(ev.start_date) <= monthEnd;
+    });
+
+    // 셀 인덱스별 트랙 점유 계산 (겹치는 이벤트를 서로 다른 행에 배치)
+    const trackMap = {};   // ev.id → track
+    const occupied = {};   // cellIdx → Set<track>
+    activeEvents.forEach(ev => {
+      const evCells = [];
+      cells.forEach((d, ci) => {
+        if (d && inRange(year, month, d, ev.start_date, ev.end_date)) evCells.push(ci);
+      });
+      if (!evCells.length) return;
+      let t = 0;
+      while (evCells.some(ci => occupied[ci] && occupied[ci].has(t))) t++;
+      trackMap[ev.id] = t;
+      evCells.forEach(ci => { (occupied[ci] = occupied[ci] || new Set()).add(t); });
+    });
+
+    const maxTrack = activeEvents.length ? Math.max(...Object.values(trackMap)) + 1 : 0;
+
+    // ── HTML 빌드 ──
+    let html = `<div class="cal-nav">
+      <button onclick="calPrev()">&#8249;</button>
+      <span>${year}년 ${MONTHS[month]}</span>
+      <button onclick="calNext()">&#8250;</button>
+    </div>`;
+
+    // 요일 헤더
+    html += `<table class="cal-table"><thead><tr>
+      <th class="sun">일</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th><th class="sat">토</th>
+    </tr></thead><tbody>`;
+
+    const weeks = [];
+    for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
+
+    weeks.forEach((week, wi) => {
+      // 날짜 숫자 행
+      html += `<tr class="cal-date-row">`;
+      week.forEach((d, di) => {
+        const isToday = d && d === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+        const cls = [di===0?'sun':'', di===6?'sat':'', isToday?'today-cell':''].filter(Boolean).join(' ');
+        html += `<td class="cal-td ${cls}">
+          ${d ? `<span class="cal-day-num${isToday?' today-num':''}">${d}</span>` : ''}
+        </td>`;
+      });
+      html += `</tr>`;
+
+      // 이벤트 바 행 (트랙별)
+      for (let t = 0; t < maxTrack; t++) {
+        // 이 주(week)에 이 트랙에 해당하는 이벤트가 있는지 확인
+        const hasAny = week.some((d,di) => {
+          if (!d) return false;
+          return activeEvents.some(ev => trackMap[ev.id] === t && inRange(year, month, d, ev.start_date, ev.end_date));
+        });
+        if (!hasAny) continue;
+
+        html += `<tr class="cal-ev-row">`;
+        let di = 0;
+        while (di < week.length) {
+          const d = week[di];
+          if (!d) { html += `<td class="cal-ev-td"></td>`; di++; continue; }
+
+          const ev = activeEvents.find(e =>
+            trackMap[e.id] === t && inRange(year, month, d, e.start_date, e.end_date)
+          );
+
+          if (!ev) { html += `<td class="cal-ev-td"></td>`; di++; continue; }
+
+          // colspan 계산 (이 주 안에서 연속된 셀 수)
+          let span = 1;
+          while (di + span < week.length) {
+            const nd = week[di + span];
+            if (nd && inRange(year, month, nd, ev.start_date, ev.end_date)) span++;
+            else break;
+          }
+
+          const isEvStart = d && cellYMD(year,month,d) === ymd(ev.start_date);
+          const isEvEnd   = week[di+span-1] && cellYMD(year,month,week[di+span-1]) === ymd(ev.end_date);
+          const label = isEvStart ? ev.deliverable_type : '';
+          const br = `${isEvStart?'4px':'0'} ${isEvEnd?'4px':'0'} ${isEvEnd?'4px':'0'} ${isEvStart?'4px':'0'}`;
+          const ml = isEvStart ? '2px' : '0';
+          const mr = isEvEnd   ? '2px' : '0';
+
+          html += `<td class="cal-ev-td" colspan="${span}">
+            <div class="cal-ev-bar"
+              style="background:${ev.color};border-radius:${br};margin:0 ${mr} 0 ${ml}"
+              onclick="event.stopPropagation();openPerfDetail(${ev.performance_id})"
+              onmouseover="showCalTooltip(event,'${ev.project_name}','${ev.deliverable_type}')"
+              onmouseout="hideCalTooltip()"
+            ><span class="cal-ev-label">${label}</span></div>
+          </td>`;
+          di += span;
+        }
+        html += `</tr>`;
+      }
+
+      // 이벤트 없는 주에도 최소 여백 행
+      if (maxTrack === 0) {
+        html += `<tr class="cal-ev-row cal-ev-spacer"><td colspan="7"></td></tr>`;
+      }
+    });
+
+    html += `</tbody></table>`;
+    el.innerHTML = html;
+    renderLegend();
+  }
+
+  function renderLegend() {
+    const seen = {};
+    CALENDAR_EVENTS.forEach(ev => {
+      if (!seen[ev.project_name]) seen[ev.project_name] = ev.color;
+    });
+    const leg = document.getElementById('calendarLegend');
+    const items = Object.entries(seen).map(([name, color]) =>
+      `<span class="legend-item"><span class="legend-line" style="background:${color}"></span>${name}</span>`
+    ).join('');
+    leg.innerHTML = items + `<span class="legend-item"><span class="legend-line" style="background:#aaa"></span>완료(준공)</span>`;
+  }
+
+  window.calPrev = () => { month--; if (month<0){month=11;year--;} render(); };
+  window.calNext = () => { month++; if (month>11){month=0;year++;} render(); };
+  render();
+})();
+
+// ── Tooltip ──
+const tooltip = Object.assign(document.createElement('div'), {className:'cal-tooltip'});
+document.body.appendChild(tooltip);
+window.showCalTooltip = (e, name, type) => {
+  tooltip.innerHTML = `<strong>${name}</strong><br><span>${type}</span>`;
+  tooltip.style.cssText = `display:block;left:${e.pageX+10}px;top:${e.pageY-30}px`;
+};
+window.hideCalTooltip = () => tooltip.style.display = 'none';
+
+// ── Performance Detail Modal ──
+window.openPerfDetail = function(id) {
+  currentPerfId = id;
+  fetch(`/performance/${id}/detail/`)
+    .then(r => r.json())
+    .then(renderPerfDetail);
+};
+
+function renderPerfDetail(data) {
+  document.getElementById('perfDetailName').textContent = data.project_name;
+  document.getElementById('perfDetailMeta').textContent = `${data.company_name} · 등록일 ${data.created_at}`;
+
+  const statusMap = {reviewing:'badge--reviewing', in_progress:'badge--in_progress', completed:'badge--completed'};
+  let html = `<span class="badge ${statusMap[data.status] || ''}" style="margin-bottom:16px;display:inline-block">${data.status_display}</span>`;
+
+  html += `<div class="detail-grid">
+    <div><span class="detail-label">발주기관</span><span class="detail-value">${data.issuing_org||'-'}</span></div>
+    <div><span class="detail-label">계약 담당자</span><span class="detail-value">${data.contact_person||'-'}</span></div>
+    <div><span class="detail-label">사업 예산</span><span class="detail-value">${data.budget||'-'}</span></div>
+    <div><span class="detail-label">수행 업체</span><span class="detail-value">${data.company_name}</span></div>
+  </div>`;
+
+  // Progress steps - 이행 진행 현황
+  const steps = ['kickoff','test_plan','test_result','final'];
+  const stepLabels = {'kickoff':'착수보고서','test_plan':'테스트 계획서','test_result':'테스트 결과 보고서','final':'완료보고서'};
+  html += `<div class="doc-section-title">이행 진행 현황</div>`;
+  html += `<div class="progress-steps">`;
+  steps.forEach((s, i) => {
+    const del = data.deliverables.find(d => d.type === s);
+    const done = del && del.status === 'submitted';
+    const hasFile = del && del.has_file;
+    // 파일이 있고 제출완료일 때만 done 색상, 파일 없으면 무색(기본)
+    const stepClass = done && hasFile ? 'done' : (!done && hasFile ? 'active' : '');
+    html += `<div class="progress-step ${stepClass}">
+      <div class="step-dot"></div>
+      <span>${stepLabels[s]}</span>
+    </div>`;
+    if (i < steps.length - 1) {
+      // 연결선도 파일 있을 때만 색상
+      const lineActive = done && hasFile ? 'step-line--done' : '';
+      html += `<div class="step-line ${lineActive}"></div>`;
+    }
+  });
+  html += `</div>`;
+
+  // Contract docs - 계약 문서 (산출물 위에 표시)
+  html += `<div class="doc-section-title">계약 문서</div>`;
+  if (data.contract_docs.length > 0) {
+    html += `<ul class="doc-list">`;
+    data.contract_docs.forEach(doc => {
+      html += `<li class="doc-item">
+        <div class="doc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+        <div class="doc-info"><span class="doc-type">${doc.doc_type_display}</span><span class="doc-name">${doc.filename}</span></div>
+        <button class="btn-file-change" onclick="openFileChange(${data.id},'${doc.doc_type}','${doc.doc_type_display}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.79"/></svg>
+          파일 변경
+        </button>
+      </li>`;
+    });
+    html += `</ul>`;
+  } else {
+    html += `<p class="empty-msg" style="padding:8px 0">등록된 계약 문서가 없습니다.</p>`;
+  }
+
+  // Deliverables
+  html += `<div class="doc-section-title">산출물</div><ul class="doc-list">`;
+  data.deliverables.forEach(del => {
+    if (del.has_file) {
+      html += `<li class="doc-item">
+        <div class="doc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+        <div class="doc-info">
+          <span class="doc-type">${del.type_display}${del.submitted_date ? ' · 제출 '+del.submitted_date : ''}</span>
+          <span class="doc-name">${del.filename}</span>
+        </div>
+        <button class="btn-file-change" onclick="openFileChange(${data.id},'${del.type}','${del.type_display}',true)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.79"/></svg>
+          파일 변경
+        </button>
+      </li>`;
+    } else {
+      html += `<li class="doc-item doc-item--pending">
+        <div class="doc-icon doc-icon--empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+        <div class="doc-info">
+          <span class="doc-type">${del.type_display}${del.due_date ? ' · 제출 '+del.due_date : ''}</span>
+          <span class="doc-name" style="color:#aaa">미등록</span>
+        </div>
+        <button class="btn-file-change btn-file-upload" onclick="openFileChange(${data.id},'${del.type}','${del.type_display}',true)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          등록
+        </button>
+      </li>`;
+    }
+  });
+  html += `</ul>`;
+  html += `<p class="perf-note">산출물 제출일정은 착수보고서·계약서 기준으로 자동 반영되어 이행 달력에 표시됩니다.</p>`;
+
+  document.getElementById('perfDetailBody').innerHTML = html;
+  openModal('modalPerfDetail');
+}
+
+// ── File Change ──
+let fcIsDeliverable = false;
+window.openFileChange = function(perfId, type, label, isDeliverable) {
+  currentPerfId = perfId;
+  fcIsDeliverable = !!isDeliverable;
+  document.getElementById('fcPerfId').value = perfId;
+  document.getElementById('fcType').value = type;
+  document.getElementById('fcLabel').textContent = label;
+  document.getElementById('fcZone').querySelector('.upload-text').textContent = '파일 선택 또는 끌어다 놓기';
+  document.getElementById('fcZone').classList.remove('has-file');
+  openModal('modalFileChange');
+};
+
+window.submitFileChange = function() {
+  const perfId = document.getElementById('fcPerfId').value;
+  const type = document.getElementById('fcType').value;
+  const file = document.getElementById('fcFile').files[0];
+  if (!file) { alert('파일을 선택해주세요.'); return; }
+
+  const fd = new FormData();
+  fd.append('deliverable_type', type);
+  fd.append('file', file);
+
+  fetch(`/performance/${perfId}/deliverable/upload/`, {
+    method: 'POST',
+    body: fd,
+    headers: {'X-CSRFToken': getCsrf()},
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.status === 'ok') {
+      closeModal('modalFileChange');
+      openPerfDetail(currentPerfId);
+    }
+  });
+};
+
+// ── Filter ──
+window.filterPerformances = function(q) {
+  document.querySelectorAll('.perf-item').forEach(el => {
+    const text = el.textContent.toLowerCase();
+    el.style.display = text.includes(q.toLowerCase()) ? '' : 'none';
+  });
+};
+window.toggleCompleted = function(show) {
+  document.querySelectorAll('.perf-item').forEach(el => {
+    if (el.dataset.status === 'completed') el.style.display = show ? '' : 'none';
+  });
+};
+
+function showFileName(input, zoneId) {
+  const zone = document.getElementById(zoneId);
+  if (input.files.length > 0) {
+    zone.querySelector('.upload-text').textContent = input.files[0].name;
+    zone.classList.add('has-file');
+  }
+}
+</script>
+{% endblock %}
