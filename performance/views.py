@@ -33,31 +33,22 @@ def performance_list(request):
     calendar_events = []
     for idx, perf in enumerate(performances):
         color = PROJECT_COLORS[idx % len(PROJECT_COLORS)]
-        is_done = perf.contract.status == 'completed'
-        deliverables = list(perf.deliverables.order_by('due_date'))
-
-        for i, d in enumerate(deliverables):
-            if not d.due_date:
-                continue
-            # start_date: 이전 산출물 due_date 다음날, 없으면 due_date 당일
-            if i > 0 and deliverables[i-1].due_date:
-                from datetime import timedelta
-                start = deliverables[i-1].due_date + timedelta(days=1)
-            else:
-                start = d.due_date
-            end = d.due_date
+        contract = perf.contract
+        if contract.contract_start and contract.contract_end:
+            is_done = contract.status == 'completed'
             calendar_events.append({
-                'id': d.id,
+                'id': f'contract_period_{perf.id}',
                 'performance_id': perf.id,
-                'project_name': perf.contract.project_name,
-                'deliverable_type': d.get_deliverable_type_display(),
-                'start_date': start.strftime('%Y-%m-%d'),
-                'end_date': end.strftime('%Y-%m-%d'),
-                'due_date': d.due_date.strftime('%Y-%m-%d'),
-                'submitted_date': d.submitted_date.strftime('%Y-%m-%d') if d.submitted_date else None,
-                'status': d.status,
-                'color': '#999999' if (is_done or d.status == 'submitted') else color,
-                'is_completed': is_done or d.status == 'submitted',
+                'project_name': contract.project_name,
+                'deliverable_type': '계약 기간',
+                'start_date': contract.contract_start.strftime('%Y-%m-%d'),
+                'end_date': contract.contract_end.strftime('%Y-%m-%d'),
+                'due_date': contract.contract_end.strftime('%Y-%m-%d'),
+                'submitted_date': None,
+                'status': contract.status,
+                'color': '#999999' if is_done else color,
+                'is_completed': is_done,
+                'is_contract_period': True,
             })
 
     return render(request, 'performance/performance_list.html', {

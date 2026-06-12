@@ -98,3 +98,17 @@ def parse_to_workit(inference_results: list) -> dict:
         'typos':        [],
         'legal_issues': legal_issues,
     }
+
+import re
+from datetime import date
+
+def extract_contract_period(text: str):
+    """
+    "2026년 6월 1일부터 2026년 7월 31일까지" 패턴 추출
+    """
+    pattern = r"(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일부터\s*(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일까지"
+    match = re.search(pattern, text)
+    if match:
+        y1, m1, d1, y2, m2, d2 = map(int, match.groups())
+        return date(y1, m1, d1), date(y2, m2, d2)
+    return None, None

@@ -225,14 +225,43 @@ def document_ai_status(request, task_id):
         return JsonResponse({'state': 'error', 'message': str(result.info)})
 
 
+# @login_required
+# @require_POST
+# def document_complete_review(request, doc_id):
+#     doc = get_object_or_404(ContractDocument, pk=doc_id, contract__created_by=request.user)
+#     doc.review_status = 'reviewed'
+#     doc.save()
+#     contract = doc.contract
+#     contract.status = 'in_progress'
+#     contract.save()
+#     return JsonResponse({'status': 'ok', 'redirect': '/performance/'})
+
 @login_required
 @require_POST
 def document_complete_review(request, doc_id):
     doc = get_object_or_404(ContractDocument, pk=doc_id, contract__created_by=request.user)
     doc.review_status = 'reviewed'
     doc.save()
+
     contract = doc.contract
     contract.status = 'in_progress'
+
+    # 계약서에서 계약기간 추출
+    try:
+        from contracts.utils import extract_text
+        import re
+        from datetime import date
+
+        text = extract_text(doc.file.path)
+        pattern = r"(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일부터\s*(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일까지"
+        match = re.search(pattern, text)
+        if match:
+            y1, m1, d1, y2, m2, d2 = map(int, match.groups())
+            contract.contract_start = date(y1, m1, d1)
+            contract.contract_end   = date(y2, m2, d2)
+    except Exception:
+        pass
+
     contract.save()
     return JsonResponse({'status': 'ok', 'redirect': '/performance/'})
 

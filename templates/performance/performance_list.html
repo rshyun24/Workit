@@ -41,7 +41,7 @@
     <ul class="perf-list" id="perfList">
       {% for perf in performances %}
       <li class="perf-item" data-id="{{ perf.id }}" data-status="{{ perf.contract.status }}" onclick="openPerfDetail({{ perf.id }})">
-        <div class="perf-item-accent" style="background: {{ project_colors|default:'' }};"></div>
+        <div class="perf-item-accent" id="perf-accent-{{ perf.id }}"></div>
         <div class="perf-item-body">
           <div class="perf-item-top">
             <span class="perf-item-name">{{ perf.contract.project_name }}</span>
@@ -254,14 +254,34 @@ let currentPerfId = null;
           const ml = isEvStart ? '2px' : '0';
           const mr = isEvEnd   ? '2px' : '0';
 
+          // html += `<td class="cal-ev-td" colspan="${span}">
+          //   <div class="cal-ev-bar"
+          //     style="background:${ev.color};border-radius:${br};margin:0 ${mr} 0 ${ml}"
+          //     onclick="event.stopPropagation();openPerfDetail(${ev.performance_id})"
+          //     onmouseover="showCalTooltip(event,'${ev.project_name}','${ev.deliverable_type}')"
+          //     onmouseout="hideCalTooltip()"
+          //   ><span class="cal-ev-label">${label}</span></div>
+          // </td>`;
+          
+          // 계약 기간 바는 얇게, 산출물 바는 기존대로
+          const isContractPeriod = ev.is_contract_period || false;
+          const barHeight = isContractPeriod ? '3px' : ''; // 얇은 줄
+          const barOpacity = isContractPeriod ? '0.5' : '1';
+          const barLabel = isContractPeriod ? '' : label;   // 계약기간 바엔 텍스트 없음
+
           html += `<td class="cal-ev-td" colspan="${span}">
             <div class="cal-ev-bar"
-              style="background:${ev.color};border-radius:${br};margin:0 ${mr} 0 ${ml}"
+              style="background:${ev.color};
+                    border-radius:${br};
+                    margin:0 ${mr} 0 ${ml};
+                    ${isContractPeriod ? 'height:3px;opacity:0.5;' : ''}
+                    "
               onclick="event.stopPropagation();openPerfDetail(${ev.performance_id})"
-              onmouseover="showCalTooltip(event,'${ev.project_name}','${ev.deliverable_type}')"
+              onmouseover="showCalTooltip(event,'${ev.project_name}','${isContractPeriod ? '계약 기간' : ev.deliverable_type}')"
               onmouseout="hideCalTooltip()"
-            ><span class="cal-ev-label">${label}</span></div>
+            ><span class="cal-ev-label">${barLabel}</span></div>
           </td>`;
+
           di += span;
         }
         html += `</tr>`;
@@ -276,24 +296,41 @@ let currentPerfId = null;
     html += `</tbody></table>`;
     el.innerHTML = html;
     renderLegend();
+    applyAccentColors();
   }
 
+  // function renderLegend() {
+  //   const seen = {};
+  //   CALENDAR_EVENTS.forEach(ev => {
+  //     if (!seen[ev.project_name]) seen[ev.project_name] = ev.color;
+  //   });
+  //   const leg = document.getElementById('calendarLegend');
+  //   const items = Object.entries(seen).map(([name, color]) =>
+  //     `<span class="legend-item"><span class="legend-line" style="background:${color}"></span>${name}</span>`
+  //   ).join('');
+  //   leg.innerHTML = items + `<span class="legend-item"><span class="legend-line" style="background:#aaa"></span>완료(준공)</span>`;
+  // }
+
   function renderLegend() {
-    const seen = {};
-    CALENDAR_EVENTS.forEach(ev => {
-      if (!seen[ev.project_name]) seen[ev.project_name] = ev.color;
-    });
-    const leg = document.getElementById('calendarLegend');
-    const items = Object.entries(seen).map(([name, color]) =>
-      `<span class="legend-item"><span class="legend-line" style="background:${color}"></span>${name}</span>`
-    ).join('');
-    leg.innerHTML = items + `<span class="legend-item"><span class="legend-line" style="background:#aaa"></span>완료(준공)</span>`;
+      const leg = document.getElementById('calendarLegend');
+      leg.innerHTML = 
+          `<span class="legend-item"><span class="legend-line" style="background:#aaa"></span>완료(준공)</span>`
+          + `<span class="legend-item"><span class="legend-line" style="background:#666;height:2px;opacity:0.5"></span>계약 기간</span>`;
   }
 
   window.calPrev = () => { month--; if (month<0){month=11;year--;} render(); };
   window.calNext = () => { month++; if (month>11){month=0;year++;} render(); };
   render();
 })();
+
+  function applyAccentColors() {
+    CALENDAR_EVENTS.forEach(ev => {
+        const accent = document.getElementById(`perf-accent-${ev.performance_id}`);
+        if (accent) {
+            accent.style.background = ev.color;
+        }
+    });
+  }
 
 // ── Tooltip ──
 const tooltip = Object.assign(document.createElement('div'), {className:'cal-tooltip'});

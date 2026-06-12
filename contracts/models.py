@@ -24,6 +24,9 @@ class Contract(models.Model):
     created_at = models.DateTimeField('등록일', auto_now_add=True)
     updated_at = models.DateTimeField('수정일', auto_now=True)
 
+    contract_start = models.DateField('계약 시작일', null=True, blank=True)
+    contract_end = models.DateField('계약 종료일', null=True, blank=True)
+
     class Meta:
         verbose_name = '계약'
         verbose_name_plural = '계약 목록'
