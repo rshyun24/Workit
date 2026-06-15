@@ -1,0 +1,319 @@
+{% extends 'base.html' %}
+{% block title %}산출물 분석 · Workit{% endblock %}
+
+{% block content %}
+<style>
+/* 품질 평가표 */
+.qa-summary { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:14px; }
+.qa-stat { background:#fff; border:1px solid #eee; border-radius:8px; padding:10px 8px; text-align:center; }
+.qa-stat .num { font-size:20px; font-weight:700; line-height:1.1; }
+.qa-stat .lbl { font-size:11px; color:#888; margin-top:3px; }
+.qa-stat.bad .num { color:#dc2626; }
+.qa-stat.warn .num { color:#d97706; }
+.qa-stat.ok .num { color:#2563eb; }
+
+.qa-table { width:100%; border-collapse:collapse; font-size:12px; background:#fff; border-radius:8px; overflow:hidden; }
+.qa-table th { background:#f4f5fb; color:#444; font-weight:600; font-size:10px; padding:6px 2px; text-align:center; position:sticky; top:0; }
+.qa-table th.name-col { text-align:left; padding-left:10px; width:34%; }
+.qa-table td { padding:5px 2px; text-align:center; border-top:1px solid #f2f2f2; vertical-align:middle; }
+.qa-table td.name-col { text-align:left; padding-left:10px; font-weight:600; color:#333; cursor:pointer; }
+.qa-table td.name-col:hover { color:#4f46e5; }
+.qa-table tr:hover { background:#fafaff; }
+
+.score-dot { display:inline-flex; align-items:center; justify-content:center; width:22px; height:20px; border-radius:4px; font-size:10px; font-weight:700; color:#fff; cursor:default; }
+.s5 { background:#2563eb; } .s4 { background:#60a5fa; }
+.s3 { background:#facc15; color:#5b4d00; } .s2 { background:#f97316; } .s1 { background:#dc2626; }
+
+.issue-list { list-style:none; margin:0; padding:0; }
+.issue-list li { padding:8px 10px; border-radius:7px; font-size:12px; line-height:1.5; margin-bottom:6px; display:flex; gap:7px; align-items:flex-start; }
+.issue-list li.bad { background:#fef2f2; color:#991b1b; }
+.issue-list li.warn { background:#fffbeb; color:#92670c; }
+.issue-list li.ok { background:#eff6ff; color:#1e40af; }
+.issue-list li .ic { flex-shrink:0; font-weight:700; }
+</style>
+<div class="analyze-layout">
+  <!-- Left: Document viewer -->
+  <div class="doc-viewer">
+    <div class="doc-viewer-header">
+      <a href="{% url 'performance_list' %}" class="back-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="15 18 9 12 15 6"/></svg>
+        이행관리
+      </a>
+      <div class="doc-viewer-title">
+        <span class="doc-filename">{{ deliverable.filename }}</span>
+        <span class="doc-breadcrumb">{{ contract.project_name }} · {{ deliverable.get_deliverable_type_display }}</span>
+      </div>
+    </div>
+
+    <div class="doc-viewer-body" id="docViewerBody" style="overflow-y:auto; padding:24px; gap:16px; display:flex; flex-direction:column; background:#F8F9FA;">
+      {% if deliverable.file %}
+        <div id="pdfPages"></div>
+      {% else %}
+        <div class="doc-empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="56" height="56"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <p>등록된 파일이 없습니다.<br>먼저 산출물 파일을 등록해주세요.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right: AI Analysis Panel -->
+  <div class="review-panel">
+    <div class="review-panel-header" style="padding:12px 20px; display:flex; align-items:center; min-height:56px; border-bottom:1px solid #f0f0f0;">
+      <div class="review-actions" style="display:flex; align-items:center; gap:8px; width:100%;">
+        <div id="reviewCountBadge" style="display:none; align-items:center; gap:6px; background:#fffbeb; border:1.5px solid #d97706; color:#d97706; border-radius:8px; padding:0 14px; height:36px; font-size:13px; font-weight:600; white-space:nowrap; flex-shrink:0;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+          <span id="reviewCountText">보완 0 건</span>
+        </div>
+        <span style="margin-left:auto; font-size:11px; color:#999; white-space:nowrap;">평가기준: 사업수행계획서 품질평가</span>
+      </div>
+    </div>
+
+    <div class="review-panel-body" id="reviewBody" style="overflow-y:auto;">
+      {% if analyzable %}
+        <!-- Initial state -->
+        <div class="ai-intro" id="aiIntro">
+          <div class="ai-intro-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          </div>
+          <h3>AI 품질 분석</h3>
+          <p>sLLM이 <strong>{{ criteria_label }}</strong>을 기준으로<br>목차 항목별 누락·일관성을 평가합니다.<br><span style="color:#999;font-size:12px;">법적 검토는 수행하지 않습니다.</span></p>
+          <button class="btn btn-primary" id="btnAnalyze" onclick="runAnalysis()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            AI 분석 시작
+          </button>
+        </div>
+      {% else %}
+        <!-- Unsupported deliverable type -->
+        <div class="ai-intro" id="aiIntro">
+          <div class="ai-intro-icon" style="color:#bbb;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <h3>분석 준비 중</h3>
+          <p>이 산출물 유형은 아직 평가기준서가<br>준비되지 않아 AI 분석을 지원하지 않습니다.<br><span style="color:#999;font-size:12px;">현재는 착수보고서(사업수행계획서)만 지원합니다.</span></p>
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="review-panel-footer" style="padding:0; min-height:0; border-top:none;">
+      <button id="btnDownloadReport"
+        style="display:none; width:100%; align-items:center; justify-content:center; gap:8px; height:48px; border:none; border-top:1.5px solid #e0e0f0; background:#fff; color:#4f46e5; font-size:13px; font-weight:600; cursor:pointer; border-radius:0 0 12px 12px;"
+        onclick="downloadReport()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        품질분석 결과 보고서 내려받기 (PDF)
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- 평가 항목 상세 모달 -->
+<div class="modal-overlay" id="modalQualityDetail" style="display:none">
+  <div class="modal modal--sm">
+    <div class="modal-header">
+      <div>
+        <h3 class="modal-title" id="qdTitle">-</h3>
+        <p class="modal-desc" id="qdSub">-</p>
+      </div>
+      <button class="modal-close" onclick="closeModal('modalQualityDetail')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div id="qdBody" style="padding:4px 0 8px;"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const DEL_ID = {{ deliverable.id }};
+let ANALYSIS = null;
+
+function runAnalysis() {
+  const btn = document.getElementById('btnAnalyze');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> 분석 중...';
+  }
+  fetch(`/performance/deliverable/${DEL_ID}/ai-analyze/`, {
+    method: 'POST',
+    headers: {'X-CSRFToken': getCsrf()},
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.status === 'ok') {
+      ANALYSIS = data;
+      renderResults(data);
+    } else {
+      alert(data.message || '분석 중 오류가 발생했습니다.');
+      if (btn) { btn.disabled = false; btn.innerHTML = 'AI 분석 시작'; }
+    }
+  })
+  .catch(() => {
+    alert('분석 요청에 실패했습니다.');
+    if (btn) { btn.disabled = false; btn.innerHTML = 'AI 분석 시작'; }
+  });
+}
+
+const SCORE_CLASS = {5:'s5',4:'s4',3:'s3',2:'s2',1:'s1'};
+const ISSUE_ICON = {ok:'✓', warn:'⚠', bad:'✕'};
+
+function renderResults(data) {
+  const intro = document.getElementById('aiIntro');
+  if (intro) intro.style.display = 'none';
+
+  const sections = data.sections || [];
+  const qualities = data.qualities || [];
+
+  // 보완 건수 = warn + bad 이슈 합
+  let warnCnt = 0, badCnt = 0, okCnt = 0;
+  sections.forEach(s => (s.issues || []).forEach(([lv]) => {
+    if (lv === 'bad') badCnt++; else if (lv === 'warn') warnCnt++; else okCnt++;
+  }));
+  const total = warnCnt + badCnt;
+
+  const badge = document.getElementById('reviewCountBadge');
+  badge.style.display = 'flex';
+  document.getElementById('reviewCountText').textContent = `보완 ${total} 건`;
+  document.getElementById('btnDownloadReport').style.display = 'flex';
+
+  let html = '';
+
+  // 요약 카드
+  html += `<div class="qa-summary">
+    <div class="qa-stat bad"><div class="num">${badCnt}</div><div class="lbl">부적합</div></div>
+    <div class="qa-stat warn"><div class="num">${warnCnt}</div><div class="lbl">보완 권고</div></div>
+    <div class="qa-stat ok"><div class="num">${okCnt}</div><div class="lbl">적합</div></div>
+  </div>`;
+
+  // 품질특성 평가표 (목차 항목 × 9특성)
+  const qShort = ['완전','정확','명확','일관','특이','검증','수정','추적','이해'];
+  html += `<div style="overflow-x:auto; border:1px solid #eee; border-radius:8px; margin-bottom:14px;">
+    <table class="qa-table"><thead><tr>
+      <th class="name-col">목차 항목</th>`;
+  qShort.forEach(q => { html += `<th title="${q}">${q}</th>`; });
+  html += `</tr></thead><tbody>`;
+
+  sections.forEach((s, idx) => {
+    html += `<tr>
+      <td class="name-col" onclick="showQualityDetail(${idx})">${s.no}. ${s.name}</td>`;
+    (s.scores || []).forEach(sc => {
+      html += `<td><span class="score-dot ${SCORE_CLASS[sc]||'s3'}">${sc}</span></td>`;
+    });
+    html += `</tr>`;
+  });
+  html += `</tbody></table></div>`;
+
+  // 보완 필요 항목 (warn/bad만 모아서)
+  html += `<div style="font-size:13px; font-weight:700; color:#333; margin:6px 0 10px;">보완이 필요한 항목</div>`;
+  let anyIssue = false;
+  sections.forEach((s, idx) => {
+    const flagged = (s.issues || []).filter(([lv]) => lv !== 'ok');
+    if (!flagged.length) return;
+    anyIssue = true;
+    html += `<div style="margin-bottom:12px;">
+      <div style="font-size:12px; font-weight:700; color:#4f46e5; margin-bottom:5px; cursor:pointer;" onclick="showQualityDetail(${idx})">${s.no}. ${s.name}</div>
+      <ul class="issue-list">`;
+    flagged.forEach(([lv, txt]) => {
+      html += `<li class="${lv}"><span class="ic">${ISSUE_ICON[lv]}</span><span>${txt}</span></li>`;
+    });
+    html += `</ul></div>`;
+  });
+  if (!anyIssue) {
+    html += `<p style="font-size:13px; color:#888; padding:10px 0;">보완이 필요한 항목이 발견되지 않았습니다.</p>`;
+  }
+
+  document.getElementById('reviewBody').innerHTML = html;
+}
+
+window.showQualityDetail = function(idx) {
+  if (!ANALYSIS) return;
+  const s = ANALYSIS.sections[idx];
+  const q = ANALYSIS.qualities || [];
+  document.getElementById('qdTitle').textContent = `${s.no}. ${s.name}`;
+  document.getElementById('qdSub').textContent = '품질특성별 점수 및 보완사항';
+
+  let html = `<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:14px;">`;
+  (s.scores || []).forEach((sc, i) => {
+    html += `<div style="background:#f8f9fb; border-radius:6px; padding:7px 4px; text-align:center;">
+      <div style="font-size:10px; color:#888;">${q[i] || ''}</div>
+      <div><span class="score-dot ${SCORE_CLASS[sc]||'s3'}" style="margin-top:3px;">${sc}</span></div>
+    </div>`;
+  });
+  html += `</div>`;
+
+  html += `<ul class="issue-list">`;
+  (s.issues || []).forEach(([lv, txt]) => {
+    html += `<li class="${lv}"><span class="ic">${ISSUE_ICON[lv]}</span><span>${txt}</span></li>`;
+  });
+  html += `</ul>`;
+
+  document.getElementById('qdBody').innerHTML = html;
+  openModal('modalQualityDetail');
+};
+
+// 분석 결과를 PDF로 다운로드 (목업 결과를 POST로 전달 → 서버가 PDF 생성)
+window.downloadReport = function() {
+  if (!ANALYSIS) { alert('먼저 AI 분석을 실행해주세요.'); return; }
+  const btn = document.getElementById('btnDownloadReport');
+  const orig = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> 생성 중...';
+
+  fetch(`/performance/deliverable/${DEL_ID}/export-pdf/`, {
+    method: 'POST',
+    headers: {'X-CSRFToken': getCsrf(), 'Content-Type': 'application/json'},
+    body: JSON.stringify({qualities: ANALYSIS.qualities, sections: ANALYSIS.sections}),
+  })
+  .then(r => {
+    if (!r.ok) throw new Error('PDF 생성 실패');
+    // 파일명은 Content-Disposition에서 추출
+    const cd = r.headers.get('Content-Disposition') || '';
+    let fname = 'AI품질분석결과.pdf';
+    const m = cd.match(/filename\*=UTF-8''([^;]+)/);
+    if (m) fname = decodeURIComponent(m[1]);
+    return r.blob().then(blob => ({blob, fname}));
+  })
+  .then(({blob, fname}) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fname;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  })
+  .catch(err => alert(err.message || 'PDF 다운로드 중 오류가 발생했습니다.'))
+  .finally(() => { btn.disabled = false; btn.innerHTML = orig; });
+};
+
+// PDF 페이지 이미지 로드
+(function() {
+  const container = document.getElementById('pdfPages');
+  if (!container) return;
+  fetch(`/performance/deliverable/${DEL_ID}/pages/`)
+    .then(r => r.json())
+    .then(data => {
+      const total = data.pages || 1;
+      for (let p = 1; p <= total; p++) {
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'background:#fff; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,.08); overflow:hidden; position:relative;';
+        const pageNum = document.createElement('div');
+        pageNum.textContent = `- ${p} -`;
+        pageNum.style.cssText = 'text-align:center; font-size:12px; color:#aaa; padding:8px 0;';
+        const img = document.createElement('img');
+        img.src = `/performance/deliverable/${DEL_ID}/page/${p}/`;
+        img.style.cssText = 'width:100%; display:block;';
+        img.alt = `페이지 ${p}`;
+        wrap.appendChild(pageNum);
+        wrap.appendChild(img);
+        container.appendChild(wrap);
+      }
+    });
+})();
+</script>
+{% endblock %}

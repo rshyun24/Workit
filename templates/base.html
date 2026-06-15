@@ -66,6 +66,13 @@
 
   <!-- Main content -->
   <main class="main-content" id="mainContent">
+    {% if messages %}
+      <div class="global-messages">
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
     {% block content %}{% endblock %}
   </main>
 </div>

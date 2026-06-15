@@ -1,6 +1,38 @@
 {% extends 'base.html' %}
 {% block title %}마이페이지 · Workit{% endblock %}
 
+{% block extra_css %}
+<style>
+  .info-card .card-header {
+    align-items: center;
+  }
+  .info-card-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .info-card-header-actions .edit-actions {
+    display: none;
+    align-items: center;
+    gap: 10px;
+  }
+  .info-card.is-editing .view-actions {
+    display: none;
+  }
+  .info-card.is-editing .edit-actions {
+    display: flex;
+  }
+  .name-edit-row {
+    width: 100%;
+    gap: 10px;
+  }
+  .name-edit-row .form-input {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
   <div>
@@ -23,13 +55,19 @@
   </div>
 
   <!-- Info Card -->
-  <div class="info-card card">
+  <div class="info-card card" id="infoCard">
     <div class="card-header">
       <h2 class="card-title">기본 정보</h2>
-      <button class="btn btn-primary" id="btnEdit" onclick="toggleEdit()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-        수정
-      </button>
+      <div class="info-card-header-actions">
+        <button type="button" class="btn btn-primary view-actions" id="btnEdit" onclick="startEdit()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          수정
+        </button>
+        <div class="edit-actions" id="editActions">
+          <button type="button" class="btn btn-ghost" onclick="cancelEdit()">취소</button>
+          <button type="button" class="btn btn-primary" onclick="saveProfile()">저장</button>
+        </div>
+      </div>
     </div>
 
     <form id="mypageForm">
@@ -41,9 +79,9 @@
             이름
           </label>
           <div class="info-value" id="view_name">{{ user.korean_name }}</div>
-          <div class="info-edit" style="display:none">
-            <input type="text" name="last_name" class="form-input form-input--sm" value="{{ user.last_name }}" placeholder="성">
-            <input type="text" name="first_name" class="form-input form-input--sm" value="{{ user.first_name }}" placeholder="이름">
+          <div class="info-edit name-edit-row" style="display:none">
+            <input type="text" name="last_name" class="form-input form-input--sm" required value="{{ user.last_name }}" placeholder="성">
+            <input type="text" name="first_name" class="form-input form-input--sm" required value="{{ user.first_name }}" placeholder="이름">
           </div>
         </div>
 
@@ -53,7 +91,7 @@
             이메일
           </label>
           <div class="info-value" id="view_email">{{ user.email|default:'-' }}</div>
-          <input type="email" name="email" class="form-input form-input--sm info-edit" style="display:none" value="{{ user.email }}">
+          <input type="email" name="email" class="form-input form-input--sm info-edit" required style="display:none" value="{{ user.email }}">
         </div>
 
         <div class="info-field">
@@ -62,7 +100,7 @@
             전화번호
           </label>
           <div class="info-value" id="view_phone">{{ user.phone|default:'-' }}</div>
-          <input type="text" name="phone" class="form-input form-input--sm info-edit" style="display:none" value="{{ user.phone }}">
+          <input type="text" name="phone" class="form-input form-input--sm info-edit" required style="display:none" value="{{ user.phone }}">
         </div>
 
         <div class="info-field">
@@ -71,7 +109,7 @@
             부서
           </label>
           <div class="info-value" id="view_department">{{ user.department|default:'-' }}</div>
-          <input type="text" name="department" class="form-input form-input--sm info-edit" style="display:none" value="{{ user.department }}">
+          <input type="text" name="department" class="form-input form-input--sm info-edit" required style="display:none" value="{{ user.department }}">
         </div>
 
         <div class="info-field">
@@ -80,7 +118,7 @@
             직급
           </label>
           <div class="info-value" id="view_position">{{ user.position|default:'-' }}</div>
-          <input type="text" name="position" class="form-input form-input--sm info-edit" style="display:none" value="{{ user.position }}">
+          <input type="text" name="position" class="form-input form-input--sm info-edit" required style="display:none" value="{{ user.position }}">
         </div>
 
         <div class="info-field">
@@ -89,14 +127,10 @@
             소속기관
           </label>
           <div class="info-value" id="view_organization">{{ user.organization|default:'-' }}</div>
-          <input type="text" name="organization" class="form-input form-input--sm info-edit" style="display:none" value="{{ user.organization }}">
+          <input type="text" name="organization" class="form-input form-input--sm info-edit" required style="display:none" value="{{ user.organization }}">
         </div>
       </div>
 
-      <div id="editActions" style="display:none;margin-top:20px;display:none">
-        <button type="button" class="btn btn-ghost" onclick="cancelEdit()">취소</button>
-        <button type="button" class="btn btn-primary" onclick="saveProfile()">저장</button>
-      </div>
     </form>
   </div>
 
@@ -111,9 +145,12 @@
       <div class="settings-item">
         <div>
           <span class="settings-label">비밀번호 변경</span>
-          <span class="settings-desc">정기적인 비밀번호 변경을 권장합니다</span>
+          <span class="settings-desc">
+            마지막 변경: {{ user.password_changed_at|date:'Y-m-d H:i'|default:'변경 필요' }}
+            {% if user.password_expires_at %} · 만료 예정: {{ user.password_expires_at|date:'Y-m-d H:i' }}{% endif %}
+          </span>
         </div>
-        <button class="btn btn-ghost btn-sm" onclick="alert('비밀번호 변경 기능은 시스템 관리자에게 문의하세요.')">변경</button>
+        <a href="{% url 'change_password' %}" class="btn btn-ghost btn-sm">변경</a>
       </div>
       <div class="settings-item">
         <div>
@@ -141,20 +178,30 @@
 <script>
 let isEditing = false;
 
-function toggleEdit() {
-  isEditing = !isEditing;
-  document.querySelectorAll('.info-value').forEach(el => el.style.display = isEditing ? 'none' : '');
-  document.querySelectorAll('.info-edit').forEach(el => el.style.display = isEditing ? '' : 'none');
-  document.getElementById('editActions').style.display = isEditing ? 'flex' : 'none';
-  document.getElementById('btnEdit').innerHTML = isEditing
-    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> 취소'
-    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> 수정';
-  if (!isEditing) isEditing = false;
+function setEditing(editing) {
+  isEditing = editing;
+  const infoCard = document.getElementById('infoCard');
+  if (infoCard) infoCard.classList.toggle('is-editing', isEditing);
+
+  document.querySelectorAll('.info-value').forEach(el => {
+    el.style.display = isEditing ? 'none' : '';
+  });
+
+  document.querySelectorAll('.info-edit').forEach(el => {
+    if (!isEditing) {
+      el.style.display = 'none';
+      return;
+    }
+    el.style.display = el.classList.contains('name-edit-row') ? 'flex' : '';
+  });
+}
+
+function startEdit() {
+  setEditing(true);
 }
 
 function cancelEdit() {
-  isEditing = true;
-  toggleEdit();
+  setEditing(false);
 }
 
 function saveProfile() {
@@ -170,8 +217,11 @@ function saveProfile() {
     if (data.status === 'ok') {
       alert(data.message);
       location.reload();
+    } else {
+      alert(data.message || '정보 수정 중 오류가 발생했습니다.');
     }
-  });
+  })
+  .catch(() => alert('정보 수정 중 오류가 발생했습니다.'));
 }
 </script>
 {% endblock %}

@@ -152,18 +152,31 @@
         <h3 class="modal-title" id="detailProjectName">-</h3>
         <p class="modal-desc" id="detailMeta">-</p>
       </div>
-      <button class="modal-close" onclick="closeModal('modalContractDetail')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
+      <div style="display:flex;align-items:center;gap:8px;" id="headerBtns">
+        <button class="btn btn-ghost btn-sm" id="btnEditInfo" onclick="toggleEditMode()" style="font-size:12px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          정보 수정
+        </button>
+        <button class="modal-close" id="btnModalClose" onclick="closeModal('modalContractDetail')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
     </div>
     <div id="detailBody"></div>
-    <div class="modal-footer">
+    <div class="modal-footer" id="detailFooterView">
       <button class="btn btn-ghost" onclick="closeModal('modalContractDetail')">닫기</button>
       <button class="btn btn-primary" id="btnAIStart" onclick="startAIReview()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
         AI 검토 시작
       </button>
     </div>
+    <!-- <div class="modal-footer" id="detailFooterEdit" style="display:none;">
+      <button class="btn btn-ghost" onclick="toggleEditMode()">취소</button>
+      <button class="btn btn-primary" onclick="submitEditInfo()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>
+        저장
+      </button>
+    </div> -->
   </div>
 </div>
 
@@ -245,13 +258,40 @@ function submitContract() {
   });
 }
 
+let currentDetailData = {};
+
 function openContractDetail(id) {
   currentContractId = id;
   fetch(`/contracts/${id}/detail/`)
     .then(r => r.json())
     .then(data => {
-      document.getElementById('detailProjectName').textContent = data.project_name;
-      document.getElementById('detailMeta').textContent = `${data.company_name} · 등록일 ${data.created_at}`;
+      currentDetailData = data;
+      renderDetailView(data);
+    });
+}
+
+function renderDetailView(data) {
+  // 모달 먼저 열기
+  openModal('modalContractDetail');
+
+  // 모달 크기 원복
+  const modalEl = document.getElementById('contractDetailContent');
+  modalEl.style.maxWidth = '';
+  modalEl.style.width = '';
+  modalEl.style.maxHeight = '';
+
+  // 헤더 버튼 원복
+  document.getElementById('headerBtns').innerHTML = `
+    <button class="btn btn-ghost btn-sm" id="btnEditInfo" onclick="toggleEditMode()" style="font-size:12px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      정보 수정
+    </button>
+    <button class="modal-close" id="btnModalClose" onclick="closeModal('modalContractDetail')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>`;
+
+  document.getElementById('detailProjectName').textContent = data.project_name;
+  document.getElementById('detailMeta').textContent = `${data.company_name} · 등록일 ${data.created_at}`;
 
       const statusMap = {reviewing:'badge--reviewing', in_progress:'badge--in_progress', completed:'badge--completed'};
       let html = `<span class="badge ${statusMap[data.status] || ''}" style="margin-bottom:16px;display:inline-block">${data.status_display}</span>`;
@@ -274,17 +314,18 @@ function openContractDetail(id) {
 
       ALL_DOC_TYPES.forEach(({type, label}) => {
         const doc = data.documents.find(d => d.doc_type === type);
+        const isContract = type === 'contract';
 
         if (doc) {
-          // 등록된 문서 — 클릭하면 분석, 파일 변경 버튼
           const reviewed = doc.review_status === 'reviewed'
             ? '<span class="badge badge--completed" style="font-size:11px;padding:2px 8px;flex-shrink:0">검토완료</span>'
             : '';
-          html += `<li class="doc-item" data-doc-id="${doc.id}" data-doc-type="${type}">
-            <div class="doc-icon" style="cursor:pointer" onclick="goToAnalyze(${doc.id})">
+          // 모든 문서 클릭하면 뷰어로 이동
+          html += `<li class="doc-item">
+            <div class="doc-icon" style="cursor:pointer" onclick="goToView(${doc.id})">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             </div>
-            <div class="doc-info" style="cursor:pointer;flex:1" onclick="goToAnalyze(${doc.id})">
+            <div class="doc-info" style="cursor:pointer;flex:1" onclick="goToView(${doc.id})">
               <span class="doc-type">${label}</span>
               <span class="doc-name">${doc.filename}</span>
             </div>
@@ -314,8 +355,110 @@ function openContractDetail(id) {
 
       html += `</ul>`;
       document.getElementById('detailBody').innerHTML = html;
-      openModal('modalContractDetail');
-    });
+
+      // 계약서 등록 여부에 따라 AI 검토 시작 버튼 활성/비활성
+      const contractDoc = data.documents.find(d => d.doc_type === 'contract');
+      const btnAI = document.getElementById('btnAIStart');
+      if (contractDoc) {
+        btnAI.disabled = false;
+        btnAI.style.opacity = '1';
+        btnAI.style.cursor = 'pointer';
+        btnAI.setAttribute('data-contract-doc-id', contractDoc.id);
+      } else {
+        btnAI.disabled = true;
+        btnAI.style.opacity = '0.4';
+        btnAI.style.cursor = 'not-allowed';
+        btnAI.title = '계약서를 먼저 등록해주세요';
+      }
+
+      // footer 뷰 모드로 초기화
+      document.getElementById('detailFooterView').style.display = 'flex';
+}
+
+function toggleEditMode() {
+  const data = currentDetailData;
+  const isEditing = document.getElementById('editHeaderBtns') !== null;
+
+  if (isEditing) {
+    // 취소 — 원래 뷰로 복원 (renderDetailView가 모달 전체 재렌더링)
+    renderDetailView(data);
+    return;
+  }
+
+  // 수정 모드 진입 — footer 뷰 숨기기
+  document.getElementById('detailFooterView').style.display = 'none';
+
+  // 헤더 버튼 영역 → 취소 + 저장 두 버튼으로 교체
+  document.getElementById('headerBtns').innerHTML = `
+    <div id="editHeaderBtns" style="display:flex;gap:8px;align-items:center;">
+      <button class="btn btn-ghost btn-sm" onclick="toggleEditMode()" style="font-size:12px;">취소</button>
+      <button class="btn btn-primary btn-sm" onclick="submitEditInfo()" style="font-size:12px;display:inline-flex;align-items:center;gap:4px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>
+        저장
+      </button>
+    </div>`;
+
+  // 타이틀 인풋
+  document.getElementById('detailProjectName').innerHTML =
+    `<input class="form-input" id="editTitleName" value="${data.project_name || ''}"
+      style="font-size:16px;font-weight:600;width:380px;max-width:100%;">`;
+
+  // detail-grid → 수정 폼
+  const grid = document.querySelector('#detailBody .detail-grid');
+  if (grid) {
+    grid.outerHTML = `<div class="detail-grid" id="editGrid">
+      <div>
+        <span class="detail-label">프로젝트명</span>
+        <input class="form-input" id="editProjectName" value="${data.project_name || ''}" style="width:100%;margin-top:4px;">
+      </div>
+      <div>
+        <span class="detail-label">수행 업체</span>
+        <input class="form-input" id="editCompanyName" value="${data.company_name || ''}" style="width:100%;margin-top:4px;">
+      </div>
+      <div>
+        <span class="detail-label">발주기관</span>
+        <input class="form-input" id="editIssuingOrg" value="${data.issuing_org || ''}" style="width:100%;margin-top:4px;">
+      </div>
+      <div>
+        <span class="detail-label">계약 담당자</span>
+        <input class="form-input" id="editContactPerson" value="${data.contact_person || ''}" style="width:100%;margin-top:4px;">
+      </div>
+      <div>
+        <span class="detail-label">사업 예산</span>
+        <input class="form-input" id="editBudget" value="${data.budget || ''}" style="width:100%;margin-top:4px;">
+      </div>
+    </div>`;
+  }
+
+  // 문서 목록 숨기기 (수정 모드에서는 불필요)
+  const docSection = document.querySelector('#detailBody .doc-section-title');
+  const docList = document.querySelector('#detailBody .doc-list');
+  if (docSection) docSection.style.display = 'none';
+  if (docList) docList.style.display = 'none';
+}
+
+function submitEditInfo() {
+  const fd = new FormData();
+  fd.append('project_name',   document.getElementById('editTitleName')?.value || document.getElementById('editProjectName')?.value || '');
+  fd.append('company_name',   document.getElementById('editCompanyName')?.value   || '');
+  fd.append('issuing_org',    document.getElementById('editIssuingOrg')?.value    || '');
+  fd.append('contact_person', document.getElementById('editContactPerson')?.value || '');
+  fd.append('budget',         document.getElementById('editBudget')?.value        || '');
+
+  fetch(`/contracts/${currentContractId}/update-info/`, {
+    method: 'POST',
+    body: fd,
+    headers: {'X-CSRFToken': getCsrf()},
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.status === 'ok') {
+      openContractDetail(currentContractId);
+      location.reload();
+    } else {
+      alert(d.message || '저장 중 오류가 발생했습니다.');
+    }
+  });
 }
 
 function openFileChange(docType, label) {
@@ -360,23 +503,18 @@ function submitFileChange() {
   });
 }
 
+function goToView(docId) {
+  window.location.href = `/contracts/document/${docId}/view/`;
+}
+
 function goToAnalyze(docId) {
   window.location.href = `/contracts/document/${docId}/analyze/`;
 }
 
-// function startAIReview() {
-//   // Find first unreviewed doc and go
-//   const items = document.querySelectorAll('.doc-item');
-//   if (items.length > 0) items[0].click();
-// }
-
 function startAIReview() {
-  const contractItem = document.querySelector('.doc-item[data-doc-type="contract"]');
-  if (contractItem && contractItem.dataset.docId) {
-    window.location.href = `/contracts/document/${contractItem.dataset.docId}/analyze/`;
-    return;
-  }
-  alert('등록된 계약서 파일이 없습니다. 먼저 계약서를 등록해주세요.');
+  const btnAI = document.getElementById('btnAIStart');
+  const docId = btnAI.getAttribute('data-contract-doc-id');
+  if (docId) goToAnalyze(docId);
 }
 </script>
 {% endblock %}

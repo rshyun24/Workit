@@ -386,39 +386,60 @@ function renderPerfDetail(data) {
   });
   html += `</div>`;
 
-  // Contract docs - 계약 문서 (산출물 위에 표시)
-  html += `<div class="doc-section-title">계약 문서</div>`;
-  if (data.contract_docs.length > 0) {
-    html += `<ul class="doc-list">`;
-    data.contract_docs.forEach(doc => {
+  // Contract docs - 계약 문서 3종 (계약서·RFP·요구사항정의서) — 뷰어 전용, 파일 변경 불가
+  html += `<div class="doc-section-title">계약 문서</div><ul class="doc-list">`;
+  data.contract_docs.forEach(doc => {
+    if (doc.has_file) {
+      // 등록된 문서 — 클릭하면 계약관리 뷰어로 이동 (보기 전용)
       html += `<li class="doc-item">
-        <div class="doc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-        <div class="doc-info"><span class="doc-type">${doc.doc_type_display}</span><span class="doc-name">${doc.filename}</span></div>
-        <button class="btn-file-change" onclick="openFileChange(${data.id},'${doc.doc_type}','${doc.doc_type_display}')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.79"/></svg>
-          파일 변경
+        <div class="doc-icon" style="cursor:pointer" onclick="goToContractView(${doc.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+        <div class="doc-info" style="cursor:pointer;flex:1" onclick="goToContractView(${doc.id})"><span class="doc-type">${doc.doc_type_display}</span><span class="doc-name">${doc.filename}</span></div>
+        <button class="btn-file-change" onclick="goToContractView(${doc.id})">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          보기
         </button>
       </li>`;
-    });
-    html += `</ul>`;
-  } else {
-    html += `<p class="empty-msg" style="padding:8px 0">등록된 계약 문서가 없습니다.</p>`;
-  }
+    } else {
+      // 미등록 문서 — 안내만 (이행관리에서는 등록 불가, 계약관리에서 등록)
+      html += `<li class="doc-item doc-item--pending">
+        <div class="doc-icon doc-icon--empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+        <div class="doc-info" style="flex:1"><span class="doc-type">${doc.doc_type_display}</span><span class="doc-name" style="color:#aaa">미등록</span></div>
+      </li>`;
+    }
+  });
+  html += `</ul>`;
 
   // Deliverables
   html += `<div class="doc-section-title">산출물</div><ul class="doc-list">`;
   data.deliverables.forEach(del => {
     if (del.has_file) {
+      // AI 분석 버튼 (분석 지원 유형만 활성)
+      const analyzeBtn = del.analyzable
+        ? `<button class="btn-file-change" style="background:#eef2ff;border-color:#c7d2fe;color:#4f46e5" onclick="goToDeliverableAnalyze(${del.id})">
+             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+             AI 분석
+           </button>`
+        : `<button class="btn-file-change" style="opacity:.5;cursor:not-allowed" title="평가기준서 준비 중" disabled>
+             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+             AI 분석
+           </button>`;
       html += `<li class="doc-item">
-        <div class="doc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-        <div class="doc-info">
+        <div class="doc-icon" style="cursor:pointer" onclick="goToDeliverableView(${del.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+        <div class="doc-info" style="cursor:pointer;flex:1" onclick="goToDeliverableView(${del.id})">
           <span class="doc-type">${del.type_display}${del.submitted_date ? ' · 제출 '+del.submitted_date : ''}</span>
           <span class="doc-name">${del.filename}</span>
         </div>
-        <button class="btn-file-change" onclick="openFileChange(${data.id},'${del.type}','${del.type_display}',true)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.79"/></svg>
-          파일 변경
-        </button>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <button class="btn-file-change" onclick="goToDeliverableView(${del.id})">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            보기
+          </button>
+          ${analyzeBtn}
+          <button class="btn-file-change" onclick="openFileChange(${data.id},'${del.type}','${del.type_display}',true)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.79"/></svg>
+            변경
+          </button>
+        </div>
       </li>`;
     } else {
       html += `<li class="doc-item doc-item--pending">
@@ -476,6 +497,17 @@ window.submitFileChange = function() {
       openPerfDetail(currentPerfId);
     }
   });
+};
+
+// ── Navigation: 뷰어 / AI 분석 ──
+window.goToContractView = function(docId) {
+  window.location.href = `/performance/contract-doc/${docId}/view/`;
+};
+window.goToDeliverableView = function(delId) {
+  window.location.href = `/performance/deliverable/${delId}/view/`;
+};
+window.goToDeliverableAnalyze = function(delId) {
+  window.location.href = `/performance/deliverable/${delId}/analyze/`;
 };
 
 // ── Filter ──

@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from django.http import HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
@@ -11,7 +12,11 @@ from .models import Contract, ContractDocument, AIReviewResult
 
 @login_required
 def contract_list(request):
-    contracts = Contract.objects.filter(created_by=request.user).order_by('-created_at')
+    # 계약 검토중 상태만 표시 (이행중/완료는 이행관리로 이동했으므로 제외)
+    contracts = Contract.objects.filter(
+        created_by=request.user,
+        status='reviewing',
+    ).order_by('-created_at')
     return render(request, 'contracts/contract_list.html', {'contracts': contracts})
 
 
@@ -74,6 +79,16 @@ def contract_detail_api(request, pk):
 
 
 @login_required
+def document_view(request, doc_id):
+    """문서 이미지 뷰어 (AI 패널 없음)"""
+    doc = get_object_or_404(ContractDocument, pk=doc_id, contract__created_by=request.user)
+    return render(request, 'contracts/document_view.html', {
+        'doc': doc,
+        'contract': doc.contract,
+    })
+
+
+@login_required
 def document_analyze(request, doc_id):
     doc = get_object_or_404(ContractDocument, pk=doc_id, contract__created_by=request.user)
     try:
@@ -86,109 +101,6 @@ def document_analyze(request, doc_id):
         'result': result,
     })
 
-
-# @login_required
-# @require_POST
-# def document_ai_analyze(request, doc_id):
-#     """RAG + sLLM(EXAONE Fine-tuned) 기반 계약서 AI 분석"""
-#     import sys
-#     import os
-#     import traceback
-
-#     doc = get_object_or_404(ContractDocument, pk=doc_id, contract__created_by=request.user)
-
-#     # ── rag/, data/ 디렉토리를 import 경로에 추가 ──
-#     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-#     for extra_path in [
-#         os.path.join(BASE_DIR, 'rag'),
-#         os.path.join(BASE_DIR, 'data'),
-#     ]:
-#         if extra_path not in sys.path:
-#             sys.path.insert(0, extra_path)
-
-#     try:
-#         from contracts.utils import extract_text, parse_to_workit
-
-#         # ── Step 1. 파일에서 텍스트 추출 ──
-#         file_text = extract_text(doc.file.path)
-#         if not file_text.strip():
-#             return JsonResponse(
-#                 {'status': 'error', 'message': '텍스트를 추출할 수 없는 파일 형식입니다.'},
-#                 status=400,
-#             )
-
-#         # ── Step 2. RAG: 조항 청킹 + Qdrant 법령 검색 ──
-#         from sentence_transformers import SentenceTransformer
-#         from qdrant_client import QdrantClient
-#         from yoonha_contract_rag import review_contract, results_to_json
-
-#         QDRANT_PATH = os.path.join(BASE_DIR, 'vectorstore', 'qdrant_storage')
-#         embed_model = SentenceTransformer('BAAI/bge-m3')
-#         qdrant_client = QdrantClient(path=QDRANT_PATH)
-
-#         clause_results = review_contract(
-#             contract_text=file_text,
-#             client=qdrant_client,
-#             model=embed_model,
-#             risk_only=True,   # 위험 조항 관련 법령만 검색
-#         )
-#         # contract_review_output.json 과 동일한 구조의 list[dict]
-#         rag_results = results_to_json(clause_results)
-
-#         # ── Step 3. sLLM(EXAONE Fine-tuned) 추론 ──
-#         from jihye_inference import load_model, predict
-
-#         llm_model, tokenizer = load_model()
-
-#         inference_results = []
-#         for item in rag_results:
-#             if not item.get('law_refs'):
-#                 continue
-
-#             print(f"[{rag_results.index(item)+1}/{len(rag_results)}] 판정 중: {item['clause_number']}", flush=True)
-
-#             prediction = predict(
-#                 clause_text=item['clause_text'],
-#                 law_refs=item['law_refs'],
-#                 model=llm_model,
-#                 tokenizer=tokenizer,
-#             )
-#             inference_results.append({
-#                 'clause_number': item['clause_number'],
-#                 'clause_text':   item['clause_text'],
-#                 'risk_names':    item.get('risk_names', []),
-#                 'prediction':    prediction,
-#             })
-
-#         # ── Step 4. Workit 화면 형식으로 변환 ──
-#         parsed = parse_to_workit(inference_results)
-
-#         # ── Step 5. DB 저장 ──
-#         AIReviewResult.objects.update_or_create(
-#             document=doc,
-#             defaults={
-#                 'blanks':       parsed['blanks'],
-#                 'typos':        parsed['typos'],
-#                 'legal_issues': parsed['legal_issues'],
-#             },
-#         )
-
-#         total = (
-#             len(parsed['blanks'])
-#             + len(parsed['typos'])
-#             + len(parsed['legal_issues'])
-#         )
-#         return JsonResponse({
-#             'status':       'ok',
-#             'total':        total,
-#             'blanks':       parsed['blanks'],
-#             'typos':        parsed['typos'],
-#             'legal_issues': parsed['legal_issues'],
-#         })
-
-#     except Exception as e:
-#         traceback.print_exc()
-#         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 @login_required
 @require_POST
@@ -225,25 +137,46 @@ def document_ai_status(request, task_id):
         return JsonResponse({'state': 'error', 'message': str(result.info)})
 
 
-# @login_required
-# @require_POST
-# def document_complete_review(request, doc_id):
-#     doc = get_object_or_404(ContractDocument, pk=doc_id, contract__created_by=request.user)
-#     doc.review_status = 'reviewed'
-#     doc.save()
-#     contract = doc.contract
-#     contract.status = 'in_progress'
-#     contract.save()
-#     return JsonResponse({'status': 'ok', 'redirect': '/performance/'})
-
 @login_required
 @require_POST
 def document_complete_review(request, doc_id):
     doc = get_object_or_404(ContractDocument, pk=doc_id, contract__created_by=request.user)
+    contract = doc.contract
+
+    # ── 이관 전 검증 ──
+    # 1. 필수 문서 3종 확인
+    REQUIRED_DOCS = [
+        ('requirements', '요구사항정의서'),
+        ('rfp', 'RFP(제안요청서)'),
+        ('contract', '계약서'),
+    ]
+    existing_types = set(contract.documents.values_list('doc_type', flat=True))
+    for dtype, dlabel in REQUIRED_DOCS:
+        if dtype not in existing_types:
+            return JsonResponse({
+                'status': 'error',
+                'message': f'{dlabel} 문서가 없어 이관이 불가합니다.',
+            }, status=400)
+
+    # 2. 필수 정보 확인
+    REQUIRED_FIELDS = [
+        ('issuing_org', '발주기관'),
+        ('contact_person', '계약 담당자'),
+        ('budget', '사업 예산'),
+        ('company_name', '수행 업체'),
+    ]
+    for field, label in REQUIRED_FIELDS:
+        value = getattr(contract, field, None)
+        if not value or not str(value).strip():
+            return JsonResponse({
+                'status': 'error',
+                'message': f'{label} 정보가 없어 이관이 불가합니다.',
+            }, status=400)
+
+    # ── 검증 통과 → 이관 처리 ──
     doc.review_status = 'reviewed'
     doc.save()
 
-    contract = doc.contract
     contract.status = 'in_progress'
 
     # 계약서에서 계약기간 추출
@@ -264,6 +197,20 @@ def document_complete_review(request, doc_id):
 
     contract.save()
     return JsonResponse({'status': 'ok', 'redirect': '/performance/'})
+
+
+@login_required
+@require_POST
+def contract_update_info(request, pk):
+    """계약 기본 정보 수정"""
+    contract = get_object_or_404(Contract, pk=pk, created_by=request.user)
+    contract.project_name  = request.POST.get('project_name', contract.project_name)
+    contract.company_name  = request.POST.get('company_name', contract.company_name)
+    contract.issuing_org   = request.POST.get('issuing_org', contract.issuing_org)
+    contract.budget        = request.POST.get('budget', contract.budget)
+    contract.contact_person = request.POST.get('contact_person', contract.contact_person)
+    contract.save()
+    return JsonResponse({'status': 'ok'})
 
 
 @login_required
@@ -382,18 +329,6 @@ def document_export_pdf(request, doc_id):
     except Exception:
         FONT = "Helvetica"
         FONT_BOLD = "Helvetica-Bold"
-    # FONT_PATH = "/usr/share/fonts/truetype/nanum/NanumGothic.ttf"
-    # FONT_BOLD_PATH = "/usr/share/fonts/truetype/nanum/NanumGothicBold.ttf"
-    # try:
-    #     if "NanumGothic" not in pdfmetrics.getRegisteredFontNames():
-    #         pdfmetrics.registerFont(TTFont("NanumGothic", FONT_PATH))
-    #         pdfmetrics.registerFont(TTFont("NanumGothicBold", FONT_BOLD_PATH))
-    #     FONT = "NanumGothic"
-    #     FONT_BOLD = "NanumGothicBold"
-    # except Exception:
-    #     # 폰트 없으면 기본 폰트 사용 (한글 깨질 수 있음)
-    #     FONT = "Helvetica"
-    #     FONT_BOLD = "Helvetica-Bold"
 
     # 스타일 
     def style(name, **kwargs):
@@ -414,9 +349,9 @@ def document_export_pdf(request, doc_id):
     }
 
     TAG_COLOR = {
-        "blank": colors.HexColor("#4f46e5"),
+        "blank": colors.HexColor("#3c36ac"),
         "typo": colors.HexColor("#d97706"),
-        "legal": colors.HexColor("#dc2626"),
+        "legal": colors.HexColor("#881818"),
     }
     TAG_BG = {
         "blank": colors.HexColor("#eef2ff"),
@@ -447,7 +382,7 @@ def document_export_pdf(request, doc_id):
     # 헤더
     story.append(Paragraph("AI 계약서 검토 결과보고서", S["title"]))
     story.append(Paragraph("Workit — 정보화사업 계약서 AI 검토 플랫폼", S["subtitle"]))
-    story.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor("#4f46e5")))
+    story.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor("#040072")))
     story.append(Spacer(1, 6))
 
     # 기본 정보 테이블
@@ -463,7 +398,7 @@ def document_export_pdf(request, doc_id):
         ("FONTNAME", (0,0), (-1,-1), FONT),
         ("FONTNAME", (0,0), (0,-1), FONT_BOLD),
         ("FONTSIZE", (0,0), (-1,-1), 10),
-        ("TEXTCOLOR", (0,0), (0,-1), colors.HexColor("#4f46e5")),
+        ("TEXTCOLOR", (0,0), (0,-1), colors.HexColor("#18145c")),
         ("BACKGROUND", (0,0), (0,-1), colors.HexColor("#f5f3ff")),
         ("GRID", (0,0), (-1,-1), 0.3, colors.HexColor("#e0e0e0")),
         ("TOPPADDING", (0,0), (-1,-1), 5),
@@ -483,41 +418,154 @@ def document_export_pdf(request, doc_id):
     def add_cards(items, tag):
         if not items:
             return
-        story.append(Paragraph(
-            f"{TAG_LABEL[tag]} ({len(items)}건)", S["section"]
-        ))
+
+        story.append(Spacer(1, 8))
+        story.append(Paragraph(f"{TAG_LABEL[tag]} ({len(items)}건)", S["section"]))
+        story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#e0e0e0")))
+        story.append(Spacer(1, 6))
+
         for item in items:
             location = item.get("location", "")
-            desc = item.get("description") or item.get("issue", "")
-            text = item.get("text", "")
-            ref = item.get("legal_ref", "")
+            text     = item.get("text", "") or item.get("original_text", "")
 
-            # 태그 + 위치 행
-            badge = Table(
-                [[Paragraph(TAG_LABEL[tag], ParagraphStyle(
+            # ── legal_ref 파싱 (판정/유형/근거 분리) ──
+            if tag == "legal":
+                raw_ref  = item.get("legal_ref", "")
+                desc     = item.get("issue", "")           # 리스크명 목록
+
+                판정_m = re.search(r"판정:\s*(.+)", raw_ref)
+                유형_m = re.search(r"유형:\s*(.+)", raw_ref)
+                근거_m = re.search(r"근거:\s*([\s\S]+)", raw_ref)
+
+                판정 = 판정_m.group(1).strip() if 판정_m else ""
+                유형 = 유형_m.group(1).strip() if 유형_m else ""
+                근거 = 근거_m.group(1).strip() if 근거_m else raw_ref
+            else:
+                desc = item.get("description", "")
+                판정 = 유형 = 근거 = ""
+                ref  = item.get("legal_ref", "")
+
+            # ── 카드 외곽 박스 (테이블로 배경+테두리 구현) ──
+            card_rows = []
+
+            # 1행: 태그 뱃지 + 위치
+            card_rows.append([
+                Paragraph(TAG_LABEL[tag], ParagraphStyle(
                     "badge", fontName=FONT_BOLD, fontSize=9,
-                    textColor=TAG_COLOR[tag], alignment=1
-                  )),
-                  Paragraph(location, S["footer"])]],
-                colWidths=[18*mm, W - 18*mm]
-            )
-            badge.setStyle(TableStyle([
-                ("BACKGROUND", (0,0), (0,0),   TAG_BG[tag]),
-                ("BACKGROUND", (1,0), (1,0),   colors.HexColor("#fafafa")),
-                ("BOX", (0,0), (-1,-1), 0.5, TAG_COLOR[tag]),
-                ("TOPPADDING", (0,0), (-1,-1), 4),
-                ("BOTTOMPADDING", (0,0), (-1,-1), 4),
-                ("LEFTPADDING", (0,0), (-1,-1), 8),
-                ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+                    textColor=TAG_COLOR[tag], alignment=1,
+                )),
+                Paragraph(location, ParagraphStyle(
+                    "loc", fontName=FONT, fontSize=9,
+                    textColor=colors.HexColor("#888888"), alignment=2,
+                )),
+            ])
+
+            card_t = Table(card_rows, colWidths=[22*mm, W - 22*mm])
+            card_t.setStyle(TableStyle([
+                ("BACKGROUND",    (0, 0), (0, 0),  TAG_BG[tag]),
+                ("BACKGROUND",    (1, 0), (1, 0),  colors.HexColor("#fafafa")),
+                ("TOPPADDING",    (0, 0), (-1, -1), 5),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+                ("LEFTPADDING",   (0, 0), (-1, -1), 8),
+                ("RIGHTPADDING",  (0, 0), (-1, -1), 8),
+                ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
+                # ("BOX",           (0, 0), (-1, -1), 1, TAG_COLOR[tag]),
+                ("LINEABOVE",     (0, 0), (-1, 0),  1, TAG_COLOR[tag]),
+                ("LINEBEFORE",    (0, 0), (0, -1),  1, TAG_COLOR[tag]),
+                ("LINEAFTER",     (-1, 0), (-1, -1), 1, TAG_COLOR[tag]),
+                ("LINEBELOW",     (0, -1), (-1, -1), 1, TAG_COLOR[tag]),
             ]))
-            story.append(badge)
+            story.append(card_t)
+
+            # 2행: 리스크명(issue) / description — 굵게
             if desc:
-                story.append(Paragraph(desc, S["body"]))
+                story.append(Table(
+                    [[Paragraph(desc, ParagraphStyle(
+                        "desc", fontName=FONT_BOLD, fontSize=10,
+                        leading=15, textColor=colors.HexColor("#111111"),
+                    ))]],
+                    colWidths=[W],
+                    style=TableStyle([
+                        ("BACKGROUND",    (0,0), (-1,-1), colors.HexColor("#fafafa")),
+                        ("TOPPADDING",    (0,0), (-1,-1), 6),
+                        ("BOTTOMPADDING", (0,0), (-1,-1), 2),
+                        ("LEFTPADDING",   (0,0), (-1,-1), 10),
+                        ("RIGHTPADDING",  (0,0), (-1,-1), 10),
+                        # ("LINEBELOW",     (0,0), (-1,-1), 0.3, colors.HexColor("#e0e0e0")),
+                    ])
+                ))
+
+            # 3행: 판정 뱃지 + 유형 (legal 전용)
+            if tag == "legal" and (판정 or 유형):
+                VERDICT_COLOR = {"정상": "#16a34a", "누락": "#d97706", "위반": "#dc2626"}
+                VERDICT_BG    = {"정상": "#f0fdf4", "누락": "#fffbeb", "위반": "#fef2f2"}
+                vc = colors.HexColor(VERDICT_COLOR.get(판정, "#6b7280"))
+                vb = colors.HexColor(VERDICT_BG.get(판정,  "#f9fafb"))
+
+                badge_row = []
+                if 판정:
+                    badge_row.append(Paragraph(f"판정: {판정}", ParagraphStyle(
+                        "verdict", fontName=FONT_BOLD, fontSize=9,
+                        textColor=vc, backColor=vb,
+                    )))
+                if 유형:
+                    badge_row.append(Paragraph(f"유형: {유형}", ParagraphStyle(
+                        "vtype", fontName=FONT, fontSize=9,
+                        textColor=colors.HexColor("#475569"),
+                    )))
+
+                col_w = W / len(badge_row)
+                vt = Table([badge_row], colWidths=[col_w] * len(badge_row))
+                vt.setStyle(TableStyle([
+                    ("BACKGROUND",    (0,0), (0,0),  vb),
+                    ("BACKGROUND",    (1,0), (1,0),  colors.HexColor("#f1f5f9")) if len(badge_row) > 1 else ("SPAN", (0,0),(0,0)),
+                    ("TOPPADDING",    (0,0), (-1,-1), 5),
+                    ("BOTTOMPADDING", (0,0), (-1,-1), 5),
+                    ("LEFTPADDING",   (0,0), (-1,-1), 10),
+                    ("BOX",           (0,0), (-1,-1), 0.3, colors.HexColor("#e0e0e0")),
+                ]))
+                story.append(vt)
+
+            # 4행: 근거 텍스트 (legal) 또는 법률근거 (일반)
+            ref_text = 근거 if tag == "legal" else (item.get("legal_ref", ""))
+            if ref_text:
+                story.append(Table(
+                    [[Paragraph(ref_text, ParagraphStyle(
+                        "ref2", fontName=FONT, fontSize=9,
+                        leading=14, textColor=colors.HexColor("#374151"),
+                    ))]],
+                    colWidths=[W],
+                    style=TableStyle([
+                        ("BACKGROUND",    (0,0), (-1,-1), colors.white),
+                        ("TOPPADDING",    (0,0), (-1,-1), 6),
+                        ("BOTTOMPADDING", (0,0), (-1,-1), 8),
+                        ("LEFTPADDING",   (0,0), (-1,-1), 10),
+                        ("RIGHTPADDING",  (0,0), (-1,-1), 10),
+                        ("BOX",           (0,0), (-1,-1), 0.3, colors.HexColor("#e0e0e0")),
+                    ])
+                ))
+
+            # 5행: 원문 인용 (있을 때만)
             if text:
-                story.append(Paragraph(f'"{text}"', S["quote"]))
-            if ref:
-                story.append(Paragraph(f"근거: {ref}", S["ref"]))
-            story.append(Spacer(1, 4))
+                short = text[:120] + ("..." if len(text) > 120 else "")
+                story.append(Table(
+                    [[Paragraph(f'"{short}"', ParagraphStyle(
+                        "qt", fontName=FONT, fontSize=8,
+                        leading=13, textColor=colors.HexColor("#555555"),
+                        leftIndent=4,
+                    ))]],
+                    colWidths=[W],
+                    style=TableStyle([
+                        ("BACKGROUND",   (0,0), (-1,-1), colors.HexColor("#f8f9fa")),
+                        ("TOPPADDING",   (0,0), (-1,-1), 5),
+                        ("BOTTOMPADDING",(0,0), (-1,-1), 5),
+                        ("LEFTPADDING",  (0,0), (-1,-1), 12),
+                        ("RIGHTPADDING", (0,0), (-1,-1), 10),
+                        ("LINEAFTER",    (0,0), (0,-1),  2, colors.HexColor("#d1d5db")),
+                    ])
+                ))
+
+            story.append(Spacer(1, 10))  # 카드 간 여백
 
     add_cards(blanks, "blank")
     add_cards(typos, "typo")
@@ -532,7 +580,11 @@ def document_export_pdf(request, doc_id):
     pdf.build(story)
 
     # 응답 
-    filename = f"{doc.filename().rsplit('.', 1)[0]}_AI검토결과.pdf"
+    from urllib.parse import quote
+
+    filename = f"{contract.project_name}_{contract.company_name}_계약서_AI분석.pdf"
+    encoded_filename = quote(filename)
+
     response = HttpResponse(buffer.getvalue(), content_type="application/pdf")
-    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response["Content-Disposition"] = f"attachment; filename*=UTF-8''{encoded_filename}"
     return response

@@ -30,7 +30,7 @@ def analyze_document_task(self, doc_id):
 
         QDRANT_PATH = os.path.join(BASE_DIR, 'vectorstore', 'qdrant_storage')
         embed_model = SentenceTransformer('BAAI/bge-m3')
-        qdrant_client = QdrantClient(path=QDRANT_PATH)
+        qdrant_client = QdrantClient(url="http://localhost:6333")
 
         clause_results = review_contract(
             contract_text=file_text,

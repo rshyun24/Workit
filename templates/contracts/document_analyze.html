@@ -151,6 +151,7 @@ function pollTaskStatus(taskId) {
 }
 
 function renderResults(blanks, typos, legal) {
+  console.log('legal:', JSON.stringify(legal, null, 2));
   const total = blanks.length + typos.length + legal.length;
   const badge = document.getElementById('reviewCountBadge');
   badge.style.display = 'flex';
@@ -194,6 +195,22 @@ function renderResults(blanks, typos, legal) {
 
   if (legal.length > 0) {
     legal.forEach(l => {
+      const ref = l.legal_ref || '';
+
+      // legal_ref에서 판정/유형/근거 파싱 (\n으로 구분됨)
+      const 판정match = ref.match(/판정:\s*(.+)/);
+      const 유형match = ref.match(/유형:\s*(.+)/);
+      const 근거match = ref.match(/근거:\s*([\s\S]+)/);
+
+      const 판정 = 판정match ? 판정match[1].trim() : '';
+      const 유형 = 유형match ? 유형match[1].trim() : '';
+      const 근거 = 근거match ? 근거match[1].trim() : ref;
+
+      const 판정색 = { '정상': '#16a34a', '누락': '#d97706', '위반': '#dc2626' };
+      const 판정bg  = { '정상': '#f0fdf4', '누락': '#fffbeb', '위반': '#fef2f2' };
+      const color = 판정색[판정] || '#6b7280';
+      const bg    = 판정bg[판정]  || '#f9fafb';
+
       html += `<div class="review-card review-card--legal" style="margin-bottom:10px;">
         <div class="review-card-header">
           <span class="review-tag tag--legal">
@@ -202,9 +219,13 @@ function renderResults(blanks, typos, legal) {
           </span>
           <span class="review-location">${l.location || ''}</span>
         </div>
-        <p class="review-desc">${l.issue}</p>
-        <div class="legal-ref">${l.legal_ref || ''}</div>
-        ${l.text ? `<div class="review-quote">"${l.text}"</div>` : ''}
+        <p class="review-desc" style="font-weight:600; margin-bottom:8px;">${l.issue || ''}</p>
+        <div style="display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
+          ${판정 ? `<span style="background:${bg}; color:${color}; border:1px solid ${color}; border-radius:6px; padding:2px 10px; font-size:12px; font-weight:700;">판정: ${판정}</span>` : ''}
+          ${유형 ? `<span style="background:#f1f5f9; color:#475569; border-radius:6px; padding:2px 10px; font-size:12px;">유형: ${유형}</span>` : ''}
+        </div>
+        ${근거 ? `<p style="font-size:13px; color:#374151; line-height:1.6; margin-bottom:6px;">${근거}</p>` : ''}
+        ${l.original_text ? `<div class="review-quote">"${l.original_text.substring(0, 100)}${l.original_text.length > 100 ? '...' : ''}"</div>` : ''}
       </div>`;
     });
   }
@@ -221,7 +242,11 @@ function completeReview() {
   })
   .then(r => r.json())
   .then(data => {
-    if (data.status === 'ok') window.location.href = data.redirect;
+    if (data.status === 'ok') {
+      window.location.href = data.redirect;
+    } else {
+      alert(data.message || '이관 중 오류가 발생했습니다.');
+    }
   });
 }
 
