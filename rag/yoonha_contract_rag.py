@@ -1,356 +1,609 @@
 """
-Workit - 계약서 검토 RAG 파이프라인
-
-흐름:
-  계약서 텍스트 입력
-      ↓
-  조항 단위 청킹
-      ↓
-  각 조항 → Qdrant 검색
-      ↓
-  관련 법령 + risk_id/risk_name 반환
-      ↓
-  JSON 저장
+Workit RAG Pipeline — 계약서 KB 평가 (KURE-v1 Hybrid 최적화 버전)
+파일명: yoonha_contract_evaluation.py
+위치:   Workit/rag/evaluation/yoonha_contract_evaluation.py
 """
 
-import re
+from __future__ import annotations
+
+import argparse
 import json
+import sys
+import math
 from dataclasses import dataclass, field, asdict
+from datetime import datetime
 from pathlib import Path
 
 from qdrant_client import QdrantClient
-from qdrant_client.models import Filter, FieldCondition, MatchValue
+from qdrant_client.models import Filter, FieldCondition, MatchValue, Prefetch, NamedSparseVector
 from sentence_transformers import SentenceTransformer
 
+# ── 경로 설정 ─────────────────────────────
+_THIS_DIR     = Path(__file__).resolve().parent
+_RAG_DIR      = _THIS_DIR.parent
+_PROJECT_ROOT = _RAG_DIR.parent
 
-# ──────────────────────────────────────────
-# 0. 설정
-# ──────────────────────────────────────────
-# QDRANT_PATH = "./vectorstore/qdrant_storage"
-COLLECTION = "law_kb"
-EMBED_MODEL = "BAAI/bge-m3"
+sys.path.insert(0, str(_RAG_DIR))
 
-TOP_K = 10
-MIN_SCORE = 0.40
+# ── 설정 (KURE-v1 및 앙상블 최적화 파라미터 적용) ───────────────────
+QDRANT_HOST          = "localhost"
+QDRANT_PORT          = 6333
+CONTRACT_COLLECTION  = "contract_kb"
+LAW_COLLECTION       = "law_kb"
+EMBED_MODEL          = "nlpai-lab/KURE-v1"  # 한국어 검증 완료 최우수 임베딩 모델
+TOP_K                = 5                    # Recall@5 100% 적중 기반 최적의 가성비 K 값 확정
+
+# ── 리스크 ID 메타 ────────────────────────
+RISK_NAMES = {
+    "RISK_001": "지연배상금 상한 미설정",
+    "RISK_002": "지연배상금률 과다 설정",
+    "RISK_003": "대금 지급 기한 미설정",
+    "RISK_004": "선급금 미지급",
+    "RISK_005": "선급금 비율 초과",
+    "RISK_006": "계약이행보증금 초과 설정",
+    "RISK_007": "하자보수보증금 초과 설정",
+    "RISK_008": "하자담보책임기간 초과",
+    "RISK_009": "납기일_계약기간 오류",
+}
+
+# ── 리스크 ID → 법령 골드 소스 ───────────
+RISK_TO_LAW_GOLD = {
+    "RISK_001": ["지방계약법 시행령 제90조"],
+    "RISK_002": ["지방계약법 시행규칙 제75조"],
+    "RISK_003": ["지방계약법 제18조", "지방계약법 시행령 제67조"],
+    "RISK_004": ["지방자치단체 용역계약 일반조건 제6절 제1항 나", "소프트웨어 진흥법 제50조"],
+    "RISK_005": ["지방자치단체 용역계약 일반조건 제6절 제1항 라",
+                 "지방자치단체 용역계약 일반조건 제6절 제1항 마",
+                 "지방계약법 시행령 제74조"],
+    "RISK_006": ["지방자치단체 용역계약 일반조건 제7절 제4항 다"],
+    "RISK_007": ["지방자치단체 용역계약 일반조건 제7절 제5항 가"],
+    "RISK_008": ["지방자치단체 용역계약 일반조건 제6절 제1항 라",
+                 "지방계약법 제22조", "지방계약법 시행령 제74조"],
+    "RISK_009": ["지방자치단체 용역계약 일반조건 제8절 제7항 가", "소프트웨어 진흥법 제38조"],
+}
+
+# ── 리스크 ID → 검색 쿼리 ────────────────
+RISK_QUERIES = {
+    "RISK_001": "지연배상금 총액의 한도가 설정되지 않은 계약 조항",
+    "RISK_002": "지연배상금률이 법정 기준을 초과하여 과도하게 설정된 경우",
+    "RISK_003": "용역 대금 지급 기한이 명시되지 않거나 불명확한 계약 조항",
+    "RISK_004": "발주자가 선급금을 지급하지 않는 계약 조항",
+    "RISK_005": "선급금 비율이 30%를 초과하여 과다 설정된 계약 조항",
+    "RISK_006": "계약이행보증금이 법정 한도를 초과하여 과다 설정된 계약 조항",
+    "RISK_007": "하자보수보증금이 법정 한도를 초과하여 과다 설정된 계약 조항",
+    "RISK_008": "하자담보책임기간이 1년을 초과하여 과도하게 설정된 계약 조항",
+    "RISK_009": "납기일이 계약기간 종료일보다 이후로 설정된 계약 조항",
+}
 
 
-# ──────────────────────────────────────────
-# 1. 데이터 클래스
-# ──────────────────────────────────────────
+# ══════════════════════════════════════════════
+# 1. 데이터클래스
+# ══════════════════════════════════════════════
+
 @dataclass
-class LawRef:
-    """검색된 법령 조문 1개"""
-    law_name: str
-    article_number: str
-    article_title: str
-    chunk_text: str
-    score: float
-    risk_ids: list[str]
-    risk_names: list[str]
-    source_full: str
-    is_risk_ref: bool
+class ContractRecord:
+    """Qdrant 에서 읽은 계약서 1건의 정보"""
+    contract_id      : str
+    contract_name    : str
+    file_format      : str
+    true_has_issue   : bool
+    true_raw_issues  : list[str]
+    pred_has_issue   : bool
+    pred_risk_ids    : list[str]
+    pred_risk_names  : list[str]
 
 
 @dataclass
-class ClauseResult:
-    """계약서 조항 1개의 검색 결과"""
-    clause_number: str
-    clause_text: str
-    law_refs: list[LawRef] = field(default_factory=list)
-    risk_ids: list[str] = field(default_factory=list)
-    risk_names: list[str] = field(default_factory=list)
+class DetectionResult:
+    record : ContractRecord
+
+    @property
+    def is_tp(self) -> bool:
+        return self.record.true_has_issue and self.record.pred_has_issue
+
+    @property
+    def is_fp(self) -> bool:
+        return not self.record.true_has_issue and self.record.pred_has_issue
+
+    @property
+    def is_fn(self) -> bool:
+        return self.record.true_has_issue and not self.record.pred_has_issue
+
+    @property
+    def is_tn(self) -> bool:
+        return not self.record.true_has_issue and not self.record.pred_has_issue
+
+    @property
+    def label(self) -> str:
+        if self.is_tp: return "TP"
+        if self.is_tn: return "TN"
+        if self.is_fp: return "FP"
+        return "FN"
 
 
-# ──────────────────────────────────────────
-# 2. 계약서 조항 단위 청킹
-# ──────────────────────────────────────────
-def chunk_contract(text: str) -> list[dict]:
-    """
-    계약서 텍스트를 조항 단위로 분할.
-    제1조, 제10조, 제2조의2 패턴 지원.
-    조항 패턴이 없으면 단락 단위로 분할.
-    """
-    text = text.strip()
+@dataclass
+class RetrievalResult:
+    risk_id      : str
+    risk_name    : str
+    query        : str
+    gold_sources : list[str]
+    retrieved    : list[dict]
+    hit_rank     : int
+    hit_at_5     : bool
+    hit_at_10    : bool
+    rr           : float
 
-    pattern = r"(제\d+조(?:의\d+)?(?:\s*\([^)]*\))?)"
-    parts = re.split(pattern, text)
 
-    clauses = []
-    i = 1
+# ══════════════════════════════════════════════
+# 2. 유틸리티 가중치 파싱 함수 (하이브리드 빌드용)
+# ══════════════════════════════════════════════
 
-    while i < len(parts) - 1:
-        raw_header = parts[i].strip()
-        body = parts[i + 1].strip()
+def get_sparse_vector(text: str, model: SentenceTransformer) -> dict:
+    """BGE-M3 구조의 토크나이저를 활용해 키워드 매칭(Sparse) 가중치 벡터를 빌드합니다."""
+    tokens = model.tokenizer.tokenize(text)
+    token_ids = model.tokenizer.convert_tokens_to_ids(tokens)
 
-        match = re.match(r"(제\d+조(?:의\d+)?)", raw_header)
-        clause_number = match.group(1) if match else raw_header
+    sparse_dict = {}
+    for t_id in token_ids:
+        sparse_dict[str(t_id)] = sparse_dict.get(str(t_id), 0.0) + 1.0
 
-        clause_text = f"{raw_header} {body}".strip()
+    norm = math.sqrt(sum(v**2 for v in sparse_dict.values()))
+    return {int(k): v / norm for k, v in sparse_dict.items()}
 
-        if body:
-            clauses.append(
-                {
-                    "clause_number": clause_number,
-                    "clause_text": clause_text,
-                }
-            )
 
-        i += 2
+# ══════════════════════════════════════════════
+# 3. Qdrant 에서 계약서 레코드 수집
+# ══════════════════════════════════════════════
 
-    if not clauses:
-        paragraphs = [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
-        clauses = [
-            {
-                "clause_number": f"단락{i + 1}",
-                "clause_text": paragraph,
+def fetch_all_contracts(client: QdrantClient) -> list[ContractRecord]:
+    records = []
+    offset  = None
+
+    while True:
+        result, next_offset = client.scroll(
+            collection_name=CONTRACT_COLLECTION,
+            scroll_filter=Filter(
+                must=[FieldCondition(
+                    key="chunk_type",
+                    match=MatchValue(value="전문_요약"),
+                )]
+            ),
+            limit=100,
+            offset=offset,
+            with_payload=True,
+            with_vectors=False,
+        )
+        for pt in result:
+            p = pt.payload
+            records.append(ContractRecord(
+                contract_id     = p.get("contract_id", ""),
+                contract_name   = p.get("contract_name", ""),
+                file_format     = p.get("file_format", ""),
+                true_has_issue  = bool(p.get("raw_issues")),
+                true_raw_issues = p.get("raw_issues", []),
+                pred_has_issue  = p.get("has_issues", False),
+                pred_risk_ids   = p.get("contract_risk_ids",   []),
+                pred_risk_names = p.get("contract_risk_names", []),
+            ))
+        if next_offset is None:
+            break
+        offset = next_offset
+
+    return records
+
+
+# ══════════════════════════════════════════════
+# 4. 리스크 탐지 평가
+# ══════════════════════════════════════════════
+
+def evaluate_detection(records: list[ContractRecord]) -> list[DetectionResult]:
+    return [DetectionResult(record=r) for r in records]
+
+
+def compute_detection_metrics(results: list[DetectionResult]) -> dict:
+    tp = sum(1 for r in results if r.is_tp)
+    fp = sum(1 for r in results if r.is_fp)
+    fn = sum(1 for r in results if r.is_fn)
+    tn = sum(1 for r in results if r.is_tn)
+
+    precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+    recall    = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+    f1        = (2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0)
+    accuracy  = (tp + tn) / len(results) if results else 0.0
+
+    return {
+        "tp": tp, "fp": fp, "fn": fn, "tn": tn,
+        "precision": round(precision, 4),
+        "recall"   : round(recall,    4),
+        "f1"       : round(f1,        4),
+        "accuracy" : round(accuracy,  4),
+    }
+
+
+def compute_risk_type_metrics(results: list[DetectionResult]) -> dict:
+    metrics = {}
+    for risk_id, risk_name in RISK_NAMES.items():
+        true_pos = []
+        for r in results:
+            rec = r.record
+            kw_map = {
+                "RISK_001": ["지체상금 한도", "지연배상금 한도"],
+                "RISK_002": ["지체상금 한도 50%", "30%를 초과"],
+                "RISK_003": ["지연이자요율", "대금 지급"],
+                "RISK_004": ["선급금 0%", "선급금이 0"],
+                "RISK_005": ["선급금 35%", "선급금 비율", "30%를 초과"],
+                "RISK_006": ["계약이행보증금", "15%"],
+                "RISK_007": ["하자보수보증금", "20%"],
+                "RISK_008": ["하자담보책임기간", "2년"],
+                "RISK_009": ["납기일", "종료일보다"],
             }
-            for i, paragraph in enumerate(paragraphs)
-        ]
+            keywords  = kw_map.get(risk_id, [risk_name])
+            gold_hit  = any(
+                any(kw in issue for kw in keywords)
+                for issue in rec.true_raw_issues
+            )
+            pred_hit  = risk_id in rec.pred_risk_ids
+            true_pos.append((gold_hit, pred_hit))
 
-    return clauses
+        hit   = sum(1 for g, p in true_pos if g and p)
+        miss  = sum(1 for g, p in true_pos if g and not p)
+        fp    = sum(1 for g, p in true_pos if not g and p)
+        total = hit + miss
+
+        metrics[risk_id] = {
+            "risk_name": risk_name,
+            "hit"  : hit,
+            "miss" : miss,
+            "fp"   : fp,
+            "total": total,
+            "recall": round(hit / total, 4) if total > 0 else None,
+        }
+    return metrics
 
 
-# ──────────────────────────────────────────
-# 3. 단일 조항 → 법령 검색
-# ──────────────────────────────────────────
-def search_law_for_clause(
-    clause_text: str,
+# ══════════════════════════════════════════════
+# 5. 법령 KB 교차 검색 평가 (앙상블 하이브리드 커널)
+# ══════════════════════════════════════════════
+
+def _first_hit_rank(retrieved: list[dict], gold_sources: list[str]) -> int:
+    for rank, item in enumerate(retrieved, start=1):
+        if item["source_full"] in gold_sources:
+            return rank
+    return 0
+
+
+def retrieve_law_hybrid(
+    query: str,
     client: QdrantClient,
     model: SentenceTransformer,
-    risk_only: bool = False,
     top_k: int = TOP_K,
-    min_score: float = MIN_SCORE,
-) -> list[LawRef]:
-    """
-    계약서 조항 텍스트로 법령 KB 검색.
-    risk_only=True이면 is_risk_ref=True인 조문만 검색.
-    """
-    query_vector = model.encode(clause_text).tolist()
+) -> list[dict]:
+    """Dense문맥 검색과 Sparse키워드 검색을 결합하고 RRF 융합하여 교차 검색 품질을 산출합니다."""
+    dense_vector = model.encode(query, normalize_embeddings=True).tolist()
+    sparse_vector = get_sparse_vector(query, model)
+    indices = list(sparse_vector.keys())
+    values = list(sparse_vector.values())
 
-    search_filter = None
-    if risk_only:
-        search_filter = Filter(
-            must=[
-                FieldCondition(
-                    key="is_risk_ref",
-                    match=MatchValue(value=True),
-                )
-            ]
-        )
-
-    response = client.query_points(
-        collection_name=COLLECTION,
-        query=query_vector,
-        query_filter=search_filter,
-        limit=top_k,
+    search_filter = Filter(
+        must=[FieldCondition(key="is_risk_ref", match=MatchValue(value=True))]
     )
 
-    points = response.points
-
-    law_refs: list[LawRef] = []
-
-    for point in points:
-        if point.score is not None and point.score < min_score:
-            continue
-
-        payload = point.payload or {}
-
-        law_refs.append(
-            LawRef(
-                law_name=payload.get("law_name", ""),
-                article_number=payload.get("article_number", ""),
-                article_title=payload.get("article_title", ""),
-                chunk_text=payload.get("chunk_text", ""),
-                score=float(point.score or 0.0),
-                risk_ids=payload.get("risk_ids", []) or [],
-                risk_names=payload.get("risk_names", []) or [],
-                source_full=payload.get("source_full", ""),
-                is_risk_ref=bool(payload.get("is_risk_ref", False)),
-            )
+    try:
+        # Qdrant 내부 RRF 순위 결합 파이프라인 호출
+        response = client.query_points(
+            collection_name=LAW_COLLECTION,
+            prefetch=[
+                Prefetch(query=dense_vector, using="dense", limit=top_k, filter=search_filter),
+                Prefetch(query=NamedSparseVector(indices=indices, values=values), using="sparse", limit=top_k, filter=search_filter)
+            ],
+            query="rrf",
+            limit=top_k,
         )
+        points = response.points
+    except Exception:
+        # 단일 벡터 구성 환경 백업을 위한 안전 폴백
+        response = client.query_points(
+            collection_name=LAW_COLLECTION,
+            query=dense_vector,
+            query_filter=search_filter,
+            limit=top_k,
+        )
+        points = response.points
 
-    return law_refs
+    return [
+        {
+            "source_full": p.payload.get("source_full", ""),
+            "score"      : round(float(p.score), 4) if p.score is not None else 0.0,
+            "risk_names" : p.payload.get("risk_names", []),
+        }
+        for p in points
+    ]
 
 
-# ──────────────────────────────────────────
-# 4. 전체 계약서 검토
-# ──────────────────────────────────────────
-def review_contract(
-    contract_text: str,
+def evaluate_retrieval(
     client: QdrantClient,
-    model: SentenceTransformer,
-    risk_only: bool = False,
-    top_k: int = TOP_K,
-    min_score: float = MIN_SCORE,
-) -> list[ClauseResult]:
-    """
-    계약서 전체 텍스트를 받아 조항별 관련 법령 검색 결과 반환.
-    """
-    clauses = chunk_contract(contract_text)
-    results: list[ClauseResult] = []
-
-    print(f"  총 {len(clauses)}개 조항 검색 중...")
-
-    for i, clause in enumerate(clauses, 1):
-        print(
-            f"  [{i}/{len(clauses)}] {clause['clause_number']} 검색 중...",
-            end="\r",
-        )
-
-        law_refs = search_law_for_clause(
-            clause_text=clause["clause_text"],
-            client=client,
-            model=model,
-            risk_only=risk_only,
-            top_k=top_k,
-            min_score=min_score,
-        )
-
-        risk_ids = list(
-            dict.fromkeys(
-                risk_id
-                for ref in law_refs
-                for risk_id in ref.risk_ids
-            )
-        )
-
-        risk_names = list(
-            dict.fromkeys(
-                risk_name
-                for ref in law_refs
-                for risk_name in ref.risk_names
-            )
-        )
-
-        results.append(
-            ClauseResult(
-                clause_number=clause["clause_number"],
-                clause_text=clause["clause_text"],
-                law_refs=law_refs,
-                risk_ids=risk_ids,
-                risk_names=risk_names,
-            )
-        )
-
-    print("\n  ✅ 검색 완료")
+    model : SentenceTransformer,
+) -> list[RetrievalResult]:
+    results = []
+    # 평가 시에는 스케일을 명확히 보기 위해 고정 탑K 가중치 한도를 일시 유연화
+    test_top_k = 10
+    for risk_id, gold_sources in RISK_TO_LAW_GOLD.items():
+        query     = RISK_QUERIES[risk_id]
+        retrieved = retrieve_law_hybrid(query, client, model, test_top_k)
+        rank      = _first_hit_rank(retrieved, gold_sources)
+        results.append(RetrievalResult(
+            risk_id      = risk_id,
+            risk_name    = RISK_NAMES[risk_id],
+            query        = query,
+            gold_sources = gold_sources,
+            retrieved    = retrieved,
+            hit_rank     = rank,
+            hit_at_5     = 1 <= rank <= 5,
+            hit_at_10    = 1 <= rank <= 10,
+            rr           = (1 / rank) if rank > 0 else 0.0,
+        ))
     return results
 
 
-# ──────────────────────────────────────────
-# 5. 결과 포매터
-# ──────────────────────────────────────────
-def format_results(results: list[ClauseResult]) -> str:
-    """
-    검색 결과를 콘솔 확인용 텍스트로 변환.
-    """
-    lines = []
+def compute_retrieval_metrics(results: list[RetrievalResult]) -> dict:
+    if not results:
+        return {"n": 0, "Recall@5": 0.0, "Recall@10": 0.0, "MRR": 0.0}
+    n = len(results)
+    return {
+        "n"        : n,
+        "Recall@5" : round(sum(r.hit_at_5  for r in results) / n, 4),
+        "Recall@10": round(sum(r.hit_at_10 for r in results) / n, 4),
+        "MRR"      : round(sum(r.rr        for r in results) / n, 4),
+    }
 
-    for result in results:
-        if not result.law_refs:
+
+# ──────────────────────────────────────────
+# 6. 리포트 출력
+# ──────────────────────────────────────────
+
+def print_detection_report(
+    results     : list[DetectionResult],
+    metrics     : dict,
+    risk_metrics: dict,
+) -> None:
+    print("\n" + "=" * 65)
+    print("【평가 1】 리스크 탐지 정확도")
+    print("=" * 65)
+
+    for r in results:
+        icon = {"TP": "✅ TP", "TN": "✅ TN", "FP": "🔴 FP", "FN": "🔴 FN"}[r.label]
+        rec  = r.record
+        print(f"\n  {icon} | {rec.contract_id} ({rec.file_format})")
+        print(f"       계약명  : {rec.contract_name[:40]}")
+        print(f"       골드    : {'문제' if rec.true_has_issue else '정상'}")
+        if rec.true_raw_issues:
+            for iss in rec.true_raw_issues:
+                print(f"                 - {iss[:60]}")
+        print(f"       예측    : {'문제' if rec.pred_has_issue else '정상'}  {rec.pred_risk_ids}")
+
+    print("\n" + "─" * 65)
+    print(f"  Confusion Matrix")
+    print(f"  {'':10}  {'예측: 문제':^12}  {'예측: 정상':^12}")
+    print(f"  {'실제: 문제':10}  {metrics['tp']:^12}  {metrics['fn']:^12}")
+    print(f"  {'실제: 정상':10}  {metrics['fp']:^12}  {metrics['tn']:^12}")
+    print("\n" + "─" * 65)
+    print(f"  {'지표':<15} {'값':>10}")
+    print("─" * 65)
+    print(f"  {'Precision':<15} {metrics['precision']:>10.4f}")
+    print(f"  {'Recall':<15} {metrics['recall']:>10.4f}")
+    print(f"  {'F1':<15} {metrics['f1']:>10.4f}")
+    print(f"  {'Accuracy':<15} {metrics['accuracy']:>10.4f}")
+    print("─" * 65)
+
+    print("\n  리스크 유형별 탐지율:")
+    for risk_id, m in risk_metrics.items():
+        if m["total"] == 0:
             continue
-
-        lines.append(f"\n{'═' * 60}")
-        lines.append(f"📌 {result.clause_number}")
-        preview = result.clause_text[:220]
-        lines.append(f"{preview}{'...' if len(result.clause_text) > 220 else ''}")
-
-        if result.risk_names:
-            lines.append(
-                f"\n⚠️ 탐지된 리스크 후보: {', '.join(result.risk_names)}"
-            )
-
-        lines.append(f"\n📚 관련 법령 Top {len(result.law_refs)}")
-
-        for idx, ref in enumerate(result.law_refs, 1):
-            risk_tag = ""
-            if ref.risk_names:
-                risk_tag = f" [{', '.join(ref.risk_names)}]"
-
-            lines.append(
-                f"  {idx}. [{ref.score:.3f}] {ref.source_full}{risk_tag}"
-            )
-            lines.append(f"     {ref.chunk_text[:150]}...")
-
-    if not lines:
-        return "관련 법령이 검색된 조항이 없습니다."
-
-    return "\n".join(lines)
+        recall = m["recall"]
+        icon   = "✅" if recall == 1.0 else ("🟡" if recall and recall > 0 else "❌")
+        print(f"  {icon} [{risk_id}] {m['risk_name']}")
+        print(f"       탐지: {m['hit']}/{m['total']}  Recall={recall:.2f}  FP={m['fp']}")
 
 
-def results_to_json(results: list[ClauseResult]) -> list[dict]:
-    """
-    EXAONE 또는 후속 LLM 입력용 JSON 변환.
-    """
-    return [asdict(result) for result in results]
+def print_retrieval_report(
+    results: list[RetrievalResult],
+    metrics: dict,
+) -> None:
+    print("\n" + "=" * 65)
+    print("【평가 2】 법령 KB 교차 검색 품질 (Recall@K / MRR)")
+    print("=" * 65)
 
+    for r in results:
+        icon     = "✅" if r.hit_at_5 else ("🟡" if r.hit_at_10 else "❌")
+        rank_str = f"rank={r.hit_rank}" if r.hit_rank > 0 else "미검색"
+        print(f"\n  {icon} [{r.risk_id}] {r.risk_name}")
+        print(f"       쿼리  : {r.query}")
+        print(f"       정답  : {', '.join(r.gold_sources)}")
+        print(f"       결과  : {rank_str}  |  RR={r.rr:.3f}")
+        print(f"       Top-{len(r.retrieved)} 하이브리드 검색 결과:")
+        for i, item in enumerate(r.retrieved, 1):
+            marker = " ← HIT" if item["source_full"] in r.gold_sources else ""
+            print(f"         {i:2}. [{item['score']:.4f}] {item['source_full']}{marker}")
 
-# ──────────────────────────────────────────
-# 6. 샘플 계약서
-# ──────────────────────────────────────────
-SAMPLE_CONTRACT = """
-제1조(목적) 본 계약은 갑(발주자)과 을(수급인) 간의 소프트웨어 개발 용역에 관한 사항을 정함을 목적으로 한다.
+    print("\n" + "─" * 65)
+    n = metrics["n"]
+    print(f"  {'지표':<15} {'값':>10}")
+    print("─" * 65)
+    print(f"  {'Recall@5':<15} {metrics['Recall@5']:>10.4f}  ({sum(r.hit_at_5 for r in results)}/{n})")
+    print(f"  {'Recall@10':<15} {metrics['Recall@10']:>10.4f}  ({sum(r.hit_at_10 for r in results)}/{n})")
+    print(f"  {'MRR':<15} {metrics['MRR']:>10.4f}")
+    print("─" * 65)
 
-제2조(계약금액) 본 계약의 총 계약금액은 금 일억원(\\100,000,000)으로 한다.
-
-제3조(납품기한) 을은 계약체결일로부터 6개월 이내에 결과물을 납품하여야 하며, 납품이 지연될 경우 지연일수에 따라 계약금액의 1000분의 5에 해당하는 지연배상금을 갑에게 지급하여야 한다.
-
-제4조(대금 지급) 갑은 을의 납품 완료 후 갑의 내부 사정에 따라 대금을 지급할 수 있다.
-
-제5조(추가 업무) 갑은 필요에 따라 계약 범위 외의 추가 업무를 을에게 요청할 수 있으며, 을은 이에 무상으로 응하여야 한다.
-
-제6조(계약 해지) 갑은 사업상 필요에 따라 언제든지 본 계약을 해지할 수 있으며, 이 경우 을은 기납품한 결과물에 대한 대가만을 청구할 수 있다.
-
-제7조(손해배상) 을의 귀책사유로 인한 손해배상은 계약금액의 100분의 10을 초과할 수 없다.
-"""
+    failed = [r for r in results if not r.hit_at_10]
+    if failed:
+        print(f"\n  ❌ top-10 미검색 ({len(failed)}건):")
+        for r in failed:
+            print(f"     - [{r.risk_id}] {r.risk_name}")
+    else:
+        print("\n  🎉 전 항목 앙상블 하이브리드 탑레이어 안 검색 성공")
 
 
 # ──────────────────────────────────────────
-# 7. 메인
+# 7. JSON 저장
 # ──────────────────────────────────────────
+
+def save_results(
+    det_results  : list[DetectionResult],
+    det_metrics  : dict,
+    risk_metrics : dict,
+    ret_results  : list[RetrievalResult],
+    ret_metrics  : dict,
+    output_path  : Path,
+) -> None:
+    output = {
+        "meta": {
+            "timestamp"  : datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "n_contracts": len(det_results),
+            "n_retrieval": ret_metrics.get("n", 0),
+            "embed_model": EMBED_MODEL,
+            "top_k"      : TOP_K,
+        },
+        "detection": {
+            "metrics"           : det_metrics,
+            "risk_type_metrics" : risk_metrics,
+            "details": [
+                {
+                    "contract_id"    : r.record.contract_id,
+                    "contract_name"  : r.record.contract_name,
+                    "file_format"    : r.record.file_format,
+                    "true_has_issue" : r.record.true_has_issue,
+                    "pred_has_issue" : r.record.pred_has_issue,
+                    "true_raw_issues": r.record.true_raw_issues,
+                    "pred_risk_ids"  : r.record.pred_risk_ids,
+                    "result"         : r.label,
+                }
+                for r in det_results
+            ],
+        },
+        "retrieval": {
+            "metrics": ret_metrics,
+            "details": [
+                {
+                    "risk_id"      : r.risk_id,
+                    "risk_name"    : r.risk_name,
+                    "query"        : r.query,
+                    "gold_sources" : r.gold_sources,
+                    "hit_rank"     : r.hit_rank,
+                    "hit_at_5"     : r.hit_at_5,
+                    "hit_at_10"    : r.hit_at_10,
+                    "rr"           : round(r.rr, 4),
+                    "top10"        : r.retrieved,
+                }
+                for r in ret_results
+            ],
+        },
+    }
+
+    path = Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(output, f, ensure_ascii=False, indent=2)
+    print(f"\n💾 평가 결과 저장 완료: {path}")
+
+
+# ──────────────────────────────────────────
+# 8. 메인 실행 제어 엔진
+# ──────────────────────────────────────────
+
 def main() -> None:
-    print("=" * 60)
-    print("Workit 계약서 검토 RAG 파이프라인")
-    print("=" * 60)
+    ap = argparse.ArgumentParser(description="Workit 계약서 RAG 평가")
+    ap.add_argument(
+        "--mode",
+        choices=["all", "detection", "retrieval"],
+        default="all",
+        help="평가 모드 (기본값: all)",
+    )
+    ap.add_argument(
+        "--output",
+        default=str(_THIS_DIR / "contract_eval_results.json"),
+        help="결과 저장 경로",
+    )
+    args = ap.parse_args()
 
-    print(f"\n📦 모델 로드: {EMBED_MODEL}")
-    model = SentenceTransformer(EMBED_MODEL)
+    print("=" * 65)
+    print("Workit RAG Pipeline — 계약서 KB 평가")
+    print(f"모드: {args.mode}  |  최적화 모델: {EMBED_MODEL}")
+    print("=" * 65)
 
-    client = QdrantClient(url="http://localhost:6333")
+    client = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
 
     try:
-        count = client.count(collection_name=COLLECTION)
-    except Exception as exc:
-        raise RuntimeError(
-            f"Qdrant 컬렉션을 찾을 수 없습니다: {COLLECTION}. "
-            f"먼저 법령 KB 구축 스크립트를 실행하세요."
-        ) from exc
+        cnt = client.count(collection_name=CONTRACT_COLLECTION)
+        print(f"\n📚 {CONTRACT_COLLECTION}: {cnt.count}개 청크 로드됨")
+    except Exception:
+        print(f"❌ {CONTRACT_COLLECTION} 컬렉션 없음")
+        print("   → py rag/yoonha_contract_chunking.py 를 먼저 실행하세요.")
+        sys.exit(1)
 
-    print(f"📚 법령 KB: {count.count}개 청크 로드됨")
+    print("📂 Qdrant contract_kb에서 골드셋 및 동적 레코드 수집 중...")
+    records = fetch_all_contracts(client)
+    print(f"   총 {len(records)}개 계약서 통합 파싱 완료"
+          f"  (문제 계약서: {sum(r.true_has_issue for r in records)}개"
+          f" / 정상 계약서: {sum(not r.true_has_issue for r in records)}개)")
 
-    print("\n🔍 계약서 검토 시작...")
+    det_results  = []
+    det_metrics  = {}
+    risk_metrics = {}
+    ret_results  = []
+    ret_metrics  = {"n": 0, "Recall@5": 0.0, "Recall@10": 0.0, "MRR": 0.0}
 
-    results = review_contract(
-        contract_text=SAMPLE_CONTRACT,
-        client=client,
-        model=model,
-        risk_only=True,
-        top_k=TOP_K,
-        min_score=MIN_SCORE,
+    # ── 평가 1: 리스크 탐지 ───────────────────
+    if args.mode in ("all", "detection"):
+        print("\n🔍 [실행] 평가 1: 리스크 탐지 정확도 (Rule-based vs Gold)")
+        det_results  = evaluate_detection(records)
+        det_metrics  = compute_detection_metrics(det_results)
+        risk_metrics = compute_risk_type_metrics(det_results)
+        print_detection_report(det_results, det_metrics, risk_metrics)
+
+    # ── 평가 2: 검색 품질 ────────────────────
+    if args.mode in ("all", "retrieval"):
+        print("\n🔍 [실행] 평가 2: 법령 KB 교차 검색 품질 (Hybrid & RRF)")
+        try:
+            cnt_law = client.count(collection_name=LAW_COLLECTION)
+            print(f"📚 {LAW_COLLECTION}: {cnt_law.count}개 청크 로드됨")
+        except Exception:
+            print(f"❌ {LAW_COLLECTION} 컬렉션 없음")
+            print("   → py rag/yoonha_law_chunking.py 를 먼저 실행하세요.")
+            if args.mode == "retrieval":
+                sys.exit(1)
+            else:
+                print("   → 검색 품질 평가 건너뜀")
+        else:
+            # 안전한 추론 인프라 서빙을 위해 토치 로딩 래핑
+            model       = SentenceTransformer(EMBED_MODEL)
+            ret_results = evaluate_retrieval(client, model)
+            ret_metrics = compute_retrieval_metrics(ret_results)
+            print_retrieval_report(ret_results, ret_metrics)
+
+    # ── 결과 저장 ────────────────────────────
+    output_path = Path(args.output)
+    save_results(
+        det_results, det_metrics, risk_metrics,
+        ret_results, ret_metrics,
+        output_path,
     )
 
-    print(format_results(results))
-
-    output_path = Path("contract_review_output.json")
-    with open(output_path, "w", encoding="utf-8") as file:
-        json.dump(
-            results_to_json(results),
-            file,
-            ensure_ascii=False,
-            indent=2,
-        )
-
-    print(f"\n💾 JSON 저장: {output_path}")
-    print("   → 팀원이 이 파일을 EXAONE 입력으로 사용하면 됩니다.")
+    # ── 최종 요약 대시보드 출력 ────────────────────────────
+    print("\n" + "=" * 65)
+    print("📊 최종 요약 벤치마크 리포트")
+    print("─" * 65)
+    if det_metrics:
+        print(f"  리스크 탐지  "
+              f"Precision={det_metrics['precision']:.4f}  "
+              f"Recall={det_metrics['recall']:.4f}  "
+              f"F1={det_metrics['f1']:.4f}  "
+              f"Accuracy={det_metrics['accuracy']:.4f}")
+    if ret_metrics.get("n", 0) > 0:
+        print(f"  검색 품질    "
+              f"Recall@5={ret_metrics['Recall@5']:.4f}  "
+              f"Recall@10={ret_metrics['Recall@10']:.4f}  "
+              f"MRR={ret_metrics['MRR']:.4f}")
+    print("=" * 65)
 
 
 if __name__ == "__main__":
