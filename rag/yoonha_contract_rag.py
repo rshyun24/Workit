@@ -6,25 +6,21 @@ Workit - 계약서 검토 RAG 파이프라인
 흐름:
   계약서 텍스트 입력
       ↓
-<<<<<<< HEAD
   조항+항 단위 청킹 (제N조 → ①②③ 항 분리)
-=======
-  조항 단위 청킹 (제N조 기준, 법령 인용·번호 역행 필터링 적용)
->>>>>>> 0d725f7606a55697e834d23d8ca4401694763ee1
       ↓
   각 청크 → Qdrant law_kb 하이브리드 검색
     (Dense BGE-M3 + Sparse BGE-M3 SPLADE, Qdrant 내부 RRF 융합)
       ↓
   chunk_id → laws_ref.json 에서 article + category 조회
       ↓
-  ClauseResult 반환 (PDF 좌표 page/bbox 포함 — tasks.py에서 병합)
+  ClauseResult 반환
 """
 
 from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from FlagEmbedding import BGEM3FlagModel
@@ -80,8 +76,6 @@ class ClauseResult:
     """계약서 조항 1건의 검색 결과"""
     clause_number : str
     clause_text   : str
-    page          : int = 0
-    bbox          : dict | None = None
     law_refs      : list[LawRef] = field(default_factory=list)
     categories    : list[str]   = field(default_factory=list)
 
@@ -143,7 +137,6 @@ def get_vectors(text: str, model: BGEM3FlagModel) -> tuple[list[float], dict[int
 # ──────────────────────────────────────────
 def chunk_contract(text: str) -> list[dict]:
     """
-<<<<<<< HEAD
     계약서 텍스트를 조항(제N조) 단위로 1차 분할 후,
     내부 ①②③ 항 단위로 2차 분할.
 
@@ -196,49 +189,6 @@ def chunk_contract(text: str) -> list[dict]:
                 j += 2
 
         i += 2
-=======
-    계약서 텍스트를 조항(제N조) 단위로 분할.
-
-    "제N조 (제목)" 형태만 헤더로 인식하되,
-    - 바로 앞 5글자가 "법"으로 끝나면 타 법령 인용으로 보고 제외
-      (예: "하도급법 제14조(하도급대금의 직접 지급)" → 제외)
-    - 조항 번호가 직전 번호보다 작거나 +5를 초과해 튀면 인용으로 보고 제외
-      (예: 계약서 본문 중 "소프트웨어진흥법 제38조(공정계약의 원칙)에 따라" → 제외)
-
-    조항 패턴이 전혀 없으면 단락 단위로 fallback.
-    """
-    text = text.strip()
-    header_pattern = re.compile(r"제(\d+)조(?:의(\d+))?\s*\(([^)]*)\)")
-
-    raw_matches = list(header_pattern.finditer(text))
-
-    candidates = []
-    for m in raw_matches:
-        prefix = text[max(0, m.start() - 5):m.start()]
-        if re.search(r"법\s*$", prefix):
-            continue  # 타 법령 인용 제외
-
-        num = int(m.group(1))
-        sub = m.group(2)
-        clause_number = f"제{m.group(1)}조" + (f"의{sub}" if sub else "")
-        candidates.append((num, clause_number, m.start()))
-
-    # 번호 순서 검사 (직전 번호와 같거나 +1~+5 이내만 허용)
-    filtered = []
-    last_num = 0
-    for num, clause_number, start in candidates:
-        if num >= last_num and num <= last_num + 5:
-            filtered.append((clause_number, start))
-            last_num = num
-
-    clauses = []
-    for idx, (clause_number, start) in enumerate(filtered):
-        end = filtered[idx + 1][1] if idx + 1 < len(filtered) else len(text)
-        clause_text = text[start:end].strip()
-        clause_text = re.sub(r"\s+", " ", clause_text)
-        if clause_text:
-            clauses.append({"clause_number": clause_number, "clause_text": clause_text})
->>>>>>> 0d725f7606a55697e834d23d8ca4401694763ee1
 
     if not clauses:
         # fallback: 단락 단위
@@ -310,27 +260,13 @@ def search_law_for_clause(
 def review_contract(
     contract_text : str,
     client        : QdrantClient,
-<<<<<<< HEAD
     model         : BGEM3FlagModel,
     laws_ref      : dict[str, dict],
     top_k         : int = TOP_K,
 ) -> list[ClauseResult]:
     """
     계약서 전체 텍스트 → 조항/항별 관련 법령 검색 결과 반환.
-=======
-    model         : SentenceTransformer,
-    laws_ref      : dict[str, dict] | None = None,
-    top_k         : int   = TOP_K,
-    min_score     : float = MIN_SCORE,
-) -> list[ClauseResult]:
     """
-    계약서 전체 텍스트 → 조항별 관련 법령 검색 결과 반환.
-    laws_ref를 안 넘기면 LAWS_REF_PATH에서 자동 로드한다.
->>>>>>> 0d725f7606a55697e834d23d8ca4401694763ee1
-    """
-    if laws_ref is None:
-        laws_ref = load_laws_ref()
-
     clauses = chunk_contract(contract_text)
     results : list[ClauseResult] = []
 
@@ -360,14 +296,3 @@ def review_contract(
 
     print("\n  ✅ 검색 완료")
     return results
-
-
-# ──────────────────────────────────────────
-# 7. JSON 변환 (tasks.py에서 사용)
-# ──────────────────────────────────────────
-def results_to_json(results: list[ClauseResult]) -> list[dict]:
-    """
-    ClauseResult 리스트를 dict 리스트로 변환.
-    sLLM(jihye_inference.predict) 및 좌표 병합(tasks.py)에서 그대로 사용한다.
-    """
-    return [asdict(result) for result in results]
