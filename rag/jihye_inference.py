@@ -145,7 +145,7 @@ def load_model():
 
 def predict(clause_text: str, law_refs: list, model, tokenizer) -> str:
     ref_text = "\n".join([
-        f"{r['source_full']}: {r['chunk_text'][:200]}"
+        f"{r.get('article') or r.get('source_full', '')}: {r['chunk_text'][:200]}"
         for r in law_refs[:3]
     ])
 

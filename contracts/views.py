@@ -95,10 +95,23 @@ def document_analyze(request, doc_id):
         result = doc.review_result
     except AIReviewResult.DoesNotExist:
         result = None
+
+    # JSONField(blanks/typos/legal_issues) 안에 Python None/True/False가 섞여 있으면
+    # 템플릿에서 {{ ... |safe }}로 그대로 출력될 때 JS 입장에서 깨진 문법(None, True, False)이
+    # 되어버린다(JS에는 null/true/false만 있음). json.dumps로 미리 직렬화해서 넘긴다.
+    result_json = None
+    if result:
+        result_json = json.dumps({
+            'blanks': result.blanks or [],
+            'typos': result.typos or [],
+            'legal_issues': result.legal_issues or [],
+        })
+
     return render(request, 'contracts/document_analyze.html', {
         'doc': doc,
         'contract': doc.contract,
         'result': result,
+        'result_json': result_json,
     })
 
 
