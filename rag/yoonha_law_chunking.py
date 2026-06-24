@@ -1,7 +1,7 @@
 """
 ═══════════════════════════════════════════════════════════════════
 STEP 1 — PyCharm에서 실행
-역할: 법령 JSON → 청크 생성 → chunks.json 저장
+역할: 법령 JSON (structured/) → 청크 생성 → chunks.json 저장
 ═══════════════════════════════════════════════════════════════════
 
 실행:
@@ -9,10 +9,25 @@ STEP 1 — PyCharm에서 실행
 
 출력:
     data/export/chunks.json   ← Colab에 업로드할 파일
+
+지원 법령 (2026-06 기준):
+    LCA    지방계약법
+    LCAE   지방계약법 시행령
+    LCAR   지방계약법 시행규칙
+    SWPA   소프트웨어 진흥법
+    SWPAE  소프트웨어 진흥법 시행령        ← 신규
+    LARA   지방회계법
+    LARAE  지방회계법 시행령
+    PYG    지방자치단체 용역계약 일반조건 (예규367호)
+    PPMA   공유재산법
+    PPMAE  공유재산법 시행령               ← 신규
+    PIPA   개인정보보호법                  ← 신규
+    PIPAE  개인정보보호법 시행령           ← 신규
+
+chunk_id는 yoonha_law_parser.py에서 생성한 값을 그대로 사용.
 """
 
 import json
-import re
 import time
 from datetime import datetime
 from pathlib import Path
@@ -21,29 +36,29 @@ from pathlib import Path
 # ──────────────────────────────────────────
 # 설정
 # ──────────────────────────────────────────
-LAW_REFS_PATH  = Path("data/law_refs.json")
-STRUCTURED_DIR = Path("data/structured")
-EXPORT_DIR     = Path("data/export")
+STRUCTURED_DIR = Path("data/structured")   # yoonha_law_parser.py 출력 디렉토리
+EXPORT_DIR     = Path("data/export")       # chunks.json 저장 위치
 
 LAW_FILES = [
-    {"filename": "지방계약법.json",                                "law_name": "지방계약법",                    "prefix": "LCA"},
-    {"filename": "지방계약법_시행령.json",                          "law_name": "지방계약법 시행령",              "prefix": "LCAE"},
-    {"filename": "지방계약법_시행규칙.json",                        "law_name": "지방계약법 시행규칙",            "prefix": "LCAR"},
-    {"filename": "소프트웨어_진흥법.json",                          "law_name": "소프트웨어 진흥법",              "prefix": "SWPA"},
-    {"filename": "지방회계법.json",                                 "law_name": "지방회계법",                    "prefix": "LARA"},
-    {"filename": "지방자치단체 용역계약 일반조건 (행안부 예규).json", "law_name": "지방자치단체 용역계약 일반조건",  "prefix": "PYG"},
+    {"filename": "지방계약법.json",                                                            "law_name": "지방계약법",                    "prefix": "LCA"},
+    {"filename": "지방계약법_시행령.json",                                                     "law_name": "지방계약법 시행령",              "prefix": "LCAE"},
+    {"filename": "지방계약법_시행규칙.json",                                                   "law_name": "지방계약법 시행규칙",            "prefix": "LCAR"},
+    {"filename": "소프트웨어_진흥법.json",                                                     "law_name": "소프트웨어 진흥법",              "prefix": "SWPA"},
+    {"filename": "소프트웨어 진흥법 시행령.json",               "law_name": "소프트웨어 진흥법 시행령",       "prefix": "SWPAE"},
+    {"filename": "지방회계법.json",                                                            "law_name": "지방회계법",                    "prefix": "LARA"},
+    {"filename": "지방회계법_시행령.json",                                                     "law_name": "지방회계법 시행령",              "prefix": "LARAE"},
+    {"filename": "지방자치단체 용역계약 일반조건 (행안부 예규).json",                           "law_name": "지방자치단체 용역계약 일반조건", "prefix": "PYG"},
+    {"filename": "공유재산법.json",                                                            "law_name": "공유재산법",                    "prefix": "PPMA"},
+    {"filename": "공유재산 및 물품 관리법 시행령.json",         "law_name": "공유재산법 시행령",              "prefix": "PPMAE"},
+    {"filename": "개인정보 보호법.json",                            "law_name": "개인정보보호법",                 "prefix": "PIPA"},
+    {"filename": "개인정보 보호법 시행령.json",                 "law_name": "개인정보보호법 시행령",          "prefix": "PIPAE"},
 ]
-
-RISK_CATEGORIES = {
-    "지체상금", "이행보증", "대금지급", "검사",
-    "하자담보", "계약금액조정", "과업내용", "계약해제해지",
-    "필수기재", "부당특약",
-}
 
 
 # ──────────────────────────────────────────
 # 유틸
 # ──────────────────────────────────────────
+
 def now() -> str:
     return datetime.now().strftime("%H:%M:%S")
 
@@ -53,132 +68,85 @@ def elapsed(start: float) -> str:
 
 
 # ──────────────────────────────────────────
-# law_refs.json 로드
-# ──────────────────────────────────────────
-def load_law_refs(path: Path) -> dict:
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
-
-
-# ──────────────────────────────────────────
 # 법령 JSON 로드
 # ──────────────────────────────────────────
+
 def load_law_json(filepath: Path) -> list[dict]:
+    """
+    yoonha_law_parser.py 가 생성한 JSON 파일을 읽어
+    텍스트가 있는 articles 리스트만 반환.
+    """
     with open(filepath, encoding="utf-8") as f:
         data = json.load(f)
     return [a for a in data.get("articles", []) if a.get("text", "").strip()]
 
 
 # ──────────────────────────────────────────
-# chunk_id 생성 (의N suffix 포함 수정)
-# ──────────────────────────────────────────
-def _make_chunk_id(prefix: str, article_id: str, hierarchy: dict | None = None) -> str:
-    def extract_num(s: str) -> str:
-        """제N조 → N, 제N조의M → N_M"""
-        m = re.search(r"제\s*(\d+)(?:조의(\d+))?", s)
-        if m:
-            return f"{m.group(1)}_{m.group(2)}" if m.group(2) else m.group(1)
-        return s
-
-    if hierarchy:
-        if prefix == "PYG":
-            parts = []
-            if "절" in hierarchy:
-                parts.append(extract_num(hierarchy["절"]))
-            if "항" in hierarchy:
-                parts.append(extract_num(hierarchy["항"]))
-            return f"{prefix}_{'_'.join(parts)}" if parts else f"{prefix}_{article_id}"
-        else:
-            parts = []
-            for key in ("조", "항", "호"):
-                if key in hierarchy:
-                    val = hierarchy[key]
-                    if key == "호":
-                        num = re.search(r"제\s*(\d+)", val)
-                        parts.append(num.group(1) if num else val.strip())
-                    else:
-                        parts.append(extract_num(val))
-            return f"{prefix}_{'_'.join(parts)}" if parts else f"{prefix}_{article_id}"
-
-    if prefix == "PYG":
-        nums = re.findall(r"제(\d+)", article_id)
-        return f"{prefix}_{'_'.join(nums[:2])}" if nums else f"{prefix}_{article_id}"
-    else:
-        # 제N조의M → N_M, 제N조 → N
-        m = re.search(r"제(\d+)조(?:의(\d+))?", article_id)
-        if m:
-            base = m.group(1)
-            suffix = f"_{m.group(2)}" if m.group(2) else ""
-            # 항/호 추가
-            sub = re.findall(r"제(\d+)[항호]", article_id)
-            sub_str = f"_{'_'.join(sub)}" if sub else ""
-            return f"{prefix}_{base}{suffix}{sub_str}"
-
-        # fallback
-        nums = re.findall(r"\d+", article_id)
-        return f"{prefix}_{'_'.join(nums)}" if nums else f"{prefix}_{article_id}"
-
-
-# ──────────────────────────────────────────
 # 청크 생성
 # ──────────────────────────────────────────
-def build_chunks(law_refs: dict) -> list[dict]:
-    ref_index = {chunk_id: meta for chunk_id, meta in law_refs.items()}
+
+def build_chunks() -> list[dict]:
+    """
+    LAW_FILES에 정의된 모든 법령을 순회하며 청크 리스트 생성.
+
+    chunk_id는 yoonha_law_parser.py가 생성한 값을 그대로 사용.
+    청킹 스크립트에서 chunk_id를 재생성하지 않음 —
+    생성 로직은 파서 한 곳에서만 관리.
+
+    각 청크 구조:
+        chunk_id      : 파서가 생성한 고유 식별자 (예: LCA_30_4)
+        law_name      : 법령명 (예: 지방계약법)
+        article_id    : 조문 ID (예: 제30조제4항)
+        article_number: 조문 번호 전문
+        text          : 조문 본문
+        is_parent     : 조 단위 parent 청크 여부 (Hierarchical RAG)
+        parent_id     : 소속 parent chunk_id (단항/parent이면 None)
+        is_ref_article: 용역계약 일반조건 핵심 조항 여부
+        is_upper_law  : PYG가 직접 인용하는 상위법 조문 여부
+        hierarchy     : 조/항/호 계층 정보
+    """
     chunks = []
     t0 = time.time()
 
     print(f"\n[{now()}] 📂 법령 JSON 로드 + 청크 생성")
+
     for law in LAW_FILES:
         filepath = STRUCTURED_DIR / law["filename"]
         if not filepath.exists():
-            print(f"  ⚠️  파일 없음: {law['filename']}")
+            print(f"  ⚠️  파일 없음 (파서 미실행?): {law['filename']}")
             continue
 
-        t_file = time.time()
+        t_file   = time.time()
         articles = load_law_json(filepath)
-        tagged_count = 0
 
         for article in articles:
-            article_id = article.get("article_id", "")
-            text       = article.get("text", "").strip()
+            text = article.get("text", "").strip()
             if not text:
                 continue
 
-            hierarchy  = article.get("hierarchy")
-            chunk_id   = _make_chunk_id(law["prefix"], article_id, hierarchy)
-            meta       = ref_index.get(chunk_id, {})
-            category   = meta.get("category", "")
-            is_risk    = category in RISK_CATEGORIES
-            if is_risk:
-                tagged_count += 1
-
             chunks.append({
-                "chunk_id":    chunk_id,
-                "law_name":    law["law_name"],
-                "article_id":  article_id,
-                "category":    category,
-                "article":     meta.get("article", ""),
-                "is_risk_ref": is_risk,
-                "text":        text,
+                "chunk_id":       article["chunk_id"],
+                "law_name":       law["law_name"],
+                "article_id":     article.get("article_id", ""),
+                "article_number": article.get("article_number", ""),
+                "text":           text,
+                "is_parent":      article.get("is_parent", False),
+                "parent_id":      article.get("parent_id"),
+                "is_ref_article": article.get("is_ref_article", False),
+                "is_upper_law":   article.get("is_upper_law", False),
+                "hierarchy":      article.get("hierarchy", {}),
             })
 
-        print(f"  ✅ [{now()}] {law['law_name']} — {len(articles)}개 조문 | 태깅: {tagged_count}개 | {elapsed(t_file)}")
+        print(f"  ✅ [{now()}] {law['law_name']} — {len(articles)}개 조문 | {elapsed(t_file)}")
 
-    total_tagged = sum(1 for c in chunks if c["is_risk_ref"])
-    print(f"\n  → 전체 {len(chunks)}개 청크 | is_risk_ref=True: {total_tagged}개 | {elapsed(t0)}")
-
-    # law_refs에 있는데 청크에 없는 chunk_id 경고
-    chunk_id_set = {c["chunk_id"] for c in chunks}
-    missing = [cid for cid in ref_index if cid not in chunk_id_set]
-    if missing:
-        print(f"\n  ⚠️  law_refs에 있지만 청크 미생성: {missing}")
-
+    print(f"\n  → 전체 {len(chunks)}개 청크 | {elapsed(t0)}")
     return chunks
 
 
 # ──────────────────────────────────────────
 # 메인
 # ──────────────────────────────────────────
+
 def main():
     t_total = time.time()
     EXPORT_DIR.mkdir(parents=True, exist_ok=True)
@@ -187,11 +155,7 @@ def main():
     print(f"  STEP 1 — 청크 생성 & 내보내기  [{now()}]")
     print("=" * 60)
 
-    print(f"\n[{now()}] 📋 law_refs.json 로드")
-    law_refs = load_law_refs(LAW_REFS_PATH)
-    print(f"  → {len(law_refs)}개 메타 등록 조문")
-
-    chunks = build_chunks(law_refs)
+    chunks = build_chunks()
 
     out_path = EXPORT_DIR / "chunks.json"
     with open(out_path, "w", encoding="utf-8") as f:
