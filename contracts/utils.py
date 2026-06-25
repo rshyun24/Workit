@@ -94,8 +94,8 @@ def parse_to_workit(inference_results: list) -> dict:
         if not prediction:
             continue
 
-        # "판정: 정상" 항목 제외
-        if '판정: 정상' in prediction:
+        # 정상 판정 제외 (계약서='일치', 산출물='충족')
+        if ('판정: 일치' in prediction) or ('판정: 충족' in prediction):
             continue
 
         # 동일 조항 번호 중복 제거
