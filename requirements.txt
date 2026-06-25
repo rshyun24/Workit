@@ -7,11 +7,15 @@ transformers==4.49.0
 peft==0.19.1
 sentence-transformers
 qdrant-client
+FlagEmbedding
+numpy
 
 # 문서 처리
 pdfplumber
 python-docx
 pdf2image
+pymupdf
+reportlab
 
 # 비동기 처리
 celery==5.6.3

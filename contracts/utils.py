@@ -10,6 +10,23 @@ def extract_text(file_path: str) -> str:
     """업로드된 파일 경로를 받아 텍스트 문자열 반환."""
     ext = file_path.lower().rsplit('.', 1)[-1]
 
+    if ext == 'hwp':
+        # 구형 HWP는 pdfplumber/docx로 직접 못 읽으므로
+        # LibreOffice(H2Orestart 확장)로 PDF 변환 후 같은 함수에 재귀 호출해 처리한다.
+        import sys
+        import os
+        import tempfile
+
+        rag_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'rag')
+        if rag_dir not in sys.path:
+            sys.path.insert(0, rag_dir)
+
+        from hwp_converter import convert_hwp_to_pdf
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            pdf_path = convert_hwp_to_pdf(file_path, tmp_dir)
+            return extract_text(pdf_path)  # 변환된 PDF를 아래 'pdf' 분기로 재처리
+
     if ext == 'pdf':
         import pdfplumber
         texts = []
@@ -77,8 +94,8 @@ def parse_to_workit(inference_results: list) -> dict:
         if not prediction:
             continue
 
-        # "판정: 정상" 항목 제외
-        if '판정: 정상' in prediction:
+        # 정상 판정 제외 (계약서='일치', 산출물='충족')
+        if ('판정: 일치' in prediction) or ('판정: 충족' in prediction):
             continue
 
         # 동일 조항 번호 중복 제거
