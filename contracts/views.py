@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import sys
 from django.http import HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
@@ -8,6 +9,11 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from .models import Contract, ContractDocument, AIReviewResult
+
+# rag/hwp_converter.py 등을 import할 수 있도록 프로젝트 루트의 rag 폴더를 경로에 추가
+_RAG_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'rag')
+if _RAG_DIR not in sys.path:
+    sys.path.insert(0, _RAG_DIR)
 
 
 @login_required
@@ -250,6 +256,41 @@ def contract_update_file(request, pk):
         )
     return JsonResponse({'status': 'ok', 'filename': f.name})
 
+def _get_pdf_path_for_view(doc):
+    """
+    뷰어/페이지수 조회용 PDF 경로를 반환한다.
+    HWP 파일이면 LibreOffice로 변환한 PDF를 media/contracts/_hwp_cache/ 에 캐시해두고
+    재사용한다(매 요청마다 변환하면 느리기 때문).
+    PDF면 원본 경로를 그대로 반환한다.
+    """
+    file_path = doc.file.path
+    if not file_path.lower().endswith('.hwp'):
+        return file_path
+
+    from django.conf import settings
+    cache_dir = os.path.join(settings.MEDIA_ROOT, 'contracts', '_hwp_cache')
+    os.makedirs(cache_dir, exist_ok=True)
+
+    cached_pdf_path = os.path.join(
+        cache_dir,
+        os.path.splitext(os.path.basename(file_path))[0] + '.pdf'
+    )
+
+    # 이미 변환된 캐시가 있고 원본보다 최신이면 그대로 사용
+    if os.path.exists(cached_pdf_path) and os.path.getmtime(cached_pdf_path) >= os.path.getmtime(file_path):
+        return cached_pdf_path
+
+    from hwp_converter import convert_hwp_to_pdf
+    converted_path = convert_hwp_to_pdf(file_path, cache_dir)
+
+    # convert_hwp_to_pdf가 만든 파일명이 cached_pdf_path와 다를 수 있으니 통일
+    if converted_path != cached_pdf_path and os.path.exists(converted_path):
+        import shutil as _shutil
+        _shutil.move(converted_path, cached_pdf_path)
+
+    return cached_pdf_path
+
+
 @login_required
 def document_page_image(request, doc_id, page):
     doc = get_object_or_404(ContractDocument, pk=doc_id, contract__created_by=request.user)
@@ -260,11 +301,13 @@ def document_page_image(request, doc_id, page):
 
         poppler_path = r"C:\poppler-24.08.0\Library\bin"
 
+        source_path = _get_pdf_path_for_view(doc)  # HWP면 변환된 PDF 경로, PDF면 원본 그대로
+
         # 한글 경로 문제 해결 - 임시 파일로 복사
         with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp:
             tmp_path = tmp.name
             # print(f"tmp_path: {tmp_path}")
-            shutil.copy2(doc.file.path, tmp_path)
+            shutil.copy2(source_path, tmp_path)
 
         images = convert_from_path(
             tmp_path,
@@ -299,8 +342,10 @@ def document_page_count(request, doc_id):
         
         poppler_path = r"C:\poppler-24.08.0\Library\bin"
 
+        source_path = _get_pdf_path_for_view(doc)  # HWP면 변환된 PDF 경로, PDF면 원본 그대로
+
         info = pdfinfo_from_path(
-            doc.file.path,
+            source_path,
             poppler_path=poppler_path if os.name == 'nt' else None,
         )
         return JsonResponse({'pages': info['Pages']})
