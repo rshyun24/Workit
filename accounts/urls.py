@@ -9,4 +9,5 @@ urlpatterns = [
     path('mypage/', views.mypage_view, name='mypage'),
     path('mypage/update/', views.mypage_update, name='mypage_update'),
     path('help/', views.help_page, name='help'),
+    path('notification/toggle/', views.toggle_notification, name='toggle_notification'),
 ]

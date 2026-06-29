@@ -1,5 +1,6 @@
 from django.db import models
 from contracts.models import Contract
+from django.contrib.auth import get_user_model
 
 
 class Performance(models.Model):
@@ -23,16 +24,15 @@ class Performance(models.Model):
 
 class Deliverable(models.Model):
     TYPE_CHOICES = [
-        ('kickoff', '착수보고서'),
-        ('test_plan', '테스트 계획서'),
-        ('test_result', '테스트 결과 보고서'),
-        ('final', '완료보고서'),
+        ('kickoff', '사업수행계획서'),
+        ('tech_apply',  '기술 적용 결과표'),
+        ('final', '사업추진결과보고서'),
     ]
     STATUS_CHOICES = [
         ('pending', '미등록'),
         ('submitted', '제출완료'),
     ]
-    TYPE_ORDER = ['kickoff', 'test_plan', 'test_result', 'final']
+    TYPE_ORDER = ['kickoff', 'test_plan', 'test_result', 'final', 'tech_apply']
 
     performance = models.ForeignKey(Performance, on_delete=models.CASCADE, related_name='deliverables')
     deliverable_type = models.CharField('산출물 유형', max_length=20, choices=TYPE_CHOICES)
@@ -55,3 +55,21 @@ class Deliverable(models.Model):
 
     def type_order(self):
         return self.TYPE_ORDER.index(self.deliverable_type) if self.deliverable_type in self.TYPE_ORDER else 99
+
+User = get_user_model()
+
+class Notification(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    message = models.CharField('메시지', max_length=255)
+    url = models.CharField('이동 경로', max_length=255, blank=True, default='/performance/')
+    is_read = models.BooleanField('읽음 여부', default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'notifications'
+        ordering = ['-created_at']
+        verbose_name = '알림'
+        verbose_name_plural = '알림 목록'
+
+    def __str__(self):
+        return f"[{self.user}] {self.message}"

@@ -42,6 +42,7 @@ class User(AbstractUser):
     locked_at = models.DateTimeField("잠금 일시", null=True, blank=True)
     lock_reason = models.CharField("잠금 사유", max_length=30, choices=LOCK_REASON_CHOICES, blank=True)
     current_session_key = models.CharField("현재 세션키", max_length=40, null=True, blank=True)
+    notification_enabled = models.BooleanField("알림 수신", default=True)
 
     REQUIRED_FIELDS = [
         "last_name",

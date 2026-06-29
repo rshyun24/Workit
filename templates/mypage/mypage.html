@@ -158,7 +158,10 @@
           <span class="settings-desc">산출물 제출 마감 알림을 받습니다</span>
         </div>
         <label class="toggle-switch">
-          <input type="checkbox" checked>
+          <input type="checkbox"
+              id="notificationToggle"
+              {% if user.notification_enabled %}checked{% endif %}
+              onchange="toggleNotification(this)">
           <span class="toggle-slider"></span>
         </label>
       </div>
@@ -222,6 +225,19 @@ function saveProfile() {
     }
   })
   .catch(() => alert('정보 수정 중 오류가 발생했습니다.'));
+}
+function toggleNotification(checkbox) {
+    fetch('{% url "toggle_notification" %}', {
+        method: 'POST',
+        headers: {'X-CSRFToken': getCsrf()},
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status !== 'ok') {
+            checkbox.checked = !checkbox.checked;
+            alert('알림 설정 변경에 실패했습니다.');
+        }
+    });
 }
 </script>
 {% endblock %}

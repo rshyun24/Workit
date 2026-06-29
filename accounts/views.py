@@ -12,6 +12,8 @@ from performance.models import Performance
 from .forms import WorkitPasswordChangeForm
 from .models import User
 
+from django.views.decorators.http import require_POST
+
 
 def _delete_session(session_key):
     if session_key:
@@ -227,3 +229,14 @@ def mypage_update(request):
 @login_required
 def help_page(request):
     return render(request, 'help/help.html')
+
+@login_required
+@require_POST
+def toggle_notification(request):
+    user = request.user
+    user.notification_enabled = not user.notification_enabled
+    user.save(update_fields=['notification_enabled'])
+    return JsonResponse({
+        'status': 'ok',
+        'notification_enabled': user.notification_enabled,
+    })

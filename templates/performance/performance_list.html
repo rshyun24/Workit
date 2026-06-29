@@ -60,7 +60,7 @@
             <div class="perf-progress-fill" style="width: {% widthratio perf.progress_count 4 100 %}%"></div>
           </div>
           <div class="perf-progress-label">
-            <span>{{ perf.progress_count }}/4 완료</span>
+            <span>{{ perf.progress_count }}/3 완료</span>
             {% with next_del=perf.deliverables.first %}
             {% if next_del and next_del.status == 'pending' %}
             <span>다음: {{ next_del.get_deliverable_type_display }}</span>
@@ -277,7 +277,7 @@ let currentPerfId = null;
                     ${isContractPeriod ? 'height:3px;opacity:0.5;' : ''}
                     "
               onclick="event.stopPropagation();openPerfDetail(${ev.performance_id})"
-              onmouseover="showCalTooltip(event,'${ev.project_name}','${isContractPeriod ? '계약 기간' : ev.deliverable_type}')"
+              onmouseover="showCalTooltip(event,'${ev.project_name}','${isContractPeriod ? `계약 기간` : ev.deliverable_type}')"
               onmouseout="hideCalTooltip()"
             ><span class="cal-ev-label">${barLabel}</span></div>
           </td>`;
@@ -306,11 +306,6 @@ let currentPerfId = null;
           + `<span class="legend-item"><span class="legend-line" style="background:#666;height:2px;opacity:0.5"></span>계약 기간</span>`;
   }
 
-  window.calPrev = () => { month--; if (month<0){month=11;year--;} render(); };
-  window.calNext = () => { month++; if (month>11){month=0;year++;} render(); };
-  render();
-})();
-
   function applyAccentColors() {
     CALENDAR_EVENTS.forEach(ev => {
         const accent = document.getElementById(`perf-accent-${ev.performance_id}`);
@@ -318,7 +313,12 @@ let currentPerfId = null;
             accent.style.background = ev.color;
         }
     });
-  }
+  }  
+
+  window.calPrev = () => { month--; if (month<0){month=11;year--;} render(); };
+  window.calNext = () => { month++; if (month>11){month=0;year++;} render(); };
+  render();
+})();
 
 // ── Tooltip ──
 const tooltip = Object.assign(document.createElement('div'), {className:'cal-tooltip'});
@@ -352,33 +352,30 @@ function renderPerfDetail(data) {
   </div>`;
 
   // Progress steps - 이행 진행 현황
-  const steps = ['kickoff','test_plan','test_result','final'];
-  const stepLabels = {'kickoff':'착수보고서','test_plan':'테스트 계획서','test_result':'테스트 결과 보고서','final':'완료보고서'};
-  html += `<div class="doc-section-title">이행 진행 현황</div>`;
+  const steps = ['kickoff','tech_apply','final'];
+  const stepLabels = {'kickoff':'사업수행계획서','tech_apply':'기술적용결과표','final':'사업추진결과보고서'};
+  html += `<div class="doc-section-title">필수 산출물 제출 현황</div>`;
   html += `<div class="progress-steps">`;
   steps.forEach((s, i) => {
     const del = data.deliverables.find(d => d.type === s);
     const done = del && del.status === 'submitted';
     const hasFile = del && del.has_file;
-    // 파일이 있고 제출완료일 때만 done 색상, 파일 없으면 무색(기본)
     const stepClass = done && hasFile ? 'done' : (!done && hasFile ? 'active' : '');
     html += `<div class="progress-step ${stepClass}">
       <div class="step-dot"></div>
       <span>${stepLabels[s]}</span>
     </div>`;
-    if (i < steps.length - 1) {
-      // 연결선도 파일 있을 때만 색상
-      const lineActive = done && hasFile ? 'step-line--done' : '';
-      html += `<div class="step-line ${lineActive}"></div>`;
-    }
+    // if (i < steps.length - 1) {
+    //   const lineActive = done && hasFile ? 'step-line--done' : '';
+    //   html += `<div class="step-line ${lineActive}"></div>`;
+    // }
   });
   html += `</div>`;
 
-  // Contract docs - 계약 문서 3종 (계약서·RFP·요구사항정의서) — 뷰어 전용, 파일 변경 불가
+  // 1. Contract docs - 계약 문서 3종 루프 (정상 복구 및 마감)
   html += `<div class="doc-section-title">계약 문서</div><ul class="doc-list">`;
   data.contract_docs.forEach(doc => {
     if (doc.has_file) {
-      // 등록된 문서 — 클릭하면 계약관리 뷰어로 이동 (보기 전용)
       html += `<li class="doc-item">
         <div class="doc-icon" style="cursor:pointer" onclick="goToContractView(${doc.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
         <div class="doc-info" style="cursor:pointer;flex:1" onclick="goToContractView(${doc.id})"><span class="doc-type">${doc.doc_type_display}</span><span class="doc-name">${doc.filename}</span></div>
@@ -388,20 +385,18 @@ function renderPerfDetail(data) {
         </button>
       </li>`;
     } else {
-      // 미등록 문서 — 안내만 (이행관리에서는 등록 불가, 계약관리에서 등록)
       html += `<li class="doc-item doc-item--pending">
         <div class="doc-icon doc-icon--empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
         <div class="doc-info" style="flex:1"><span class="doc-type">${doc.doc_type_display}</span><span class="doc-name" style="color:#aaa">미등록</span></div>
       </li>`;
     }
   });
-  html += `</ul>`;
+  html += `</ul>`; // 계약 문서 영역 끝
 
-  // Deliverables
+  // 2. Deliverables - 산출물 루프 (여기에 마감일 기능 결합)
   html += `<div class="doc-section-title">산출물</div><ul class="doc-list">`;
   data.deliverables.forEach(del => {
     if (del.has_file) {
-      // AI 분석 버튼 (분석 지원 유형만 활성)
       const analyzeBtn = del.analyzable
         ? `<button class="btn-file-change" style="background:#eef2ff;border-color:#c7d2fe;color:#4f46e5" onclick="goToDeliverableAnalyze(${del.id})">
              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
@@ -423,20 +418,34 @@ function renderPerfDetail(data) {
             보기
           </button>
           ${analyzeBtn}
-          <button class="btn-file-change" onclick="openFileChange(${data.id},'${del.type}','${del.type_display}',true)">
+          <button class="btn-file-change" onclick="openFileChange(${data.id},\`${del.type}\`,\`${del.type_display}\`,true)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.79"/></svg>
             변경
           </button>
         </div>
       </li>`;
     } else {
+      // 미등록 산출물일 때 -> 특정 조건(is_target)이면 마감일 설정 필드 노출
+      const dueDateInput = del.is_target ? `
+        <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+            <span style="font-size:11px;color:#888">마감일:</span>
+            <input type="date"
+                id="dueDate_${del.type}"
+                value="${del.due_date || ''}"
+                style="font-size:12px;border:1px solid #ddd;
+                       border-radius:4px;padding:2px 6px"
+                onchange="saveDueDate(${data.id},'${del.type}',this.value)">
+        </div>
+      ` : '';
+
       html += `<li class="doc-item doc-item--pending">
         <div class="doc-icon doc-icon--empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-        <div class="doc-info">
+        <div class="doc-info" style="flex:1">
           <span class="doc-type">${del.type_display}${del.due_date ? ' · 제출 '+del.due_date : ''}</span>
           <span class="doc-name" style="color:#aaa">미등록</span>
+          ${dueDateInput}
         </div>
-        <button class="btn-file-change btn-file-upload" onclick="openFileChange(${data.id},'${del.type}','${del.type_display}',true)">
+        <button class="btn-file-change btn-file-upload" onclick="openFileChange(${data.id},\`${del.type}\`,\`${del.type_display}\`,true)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           등록
         </button>
@@ -449,6 +458,146 @@ function renderPerfDetail(data) {
   document.getElementById('perfDetailBody').innerHTML = html;
   openModal('modalPerfDetail');
 }
+
+// function renderPerfDetail(data) {
+//   document.getElementById('perfDetailName').textContent = data.project_name;
+//   document.getElementById('perfDetailMeta').textContent = `${data.company_name} · 등록일 ${data.created_at}`;
+
+//   const statusMap = {reviewing:'badge--reviewing', in_progress:'badge--in_progress', completed:'badge--completed'};
+//   let html = `<span class="badge ${statusMap[data.status] || ''}" style="margin-bottom:16px;display:inline-block">${data.status_display}</span>`;
+
+//   html += `<div class="detail-grid">
+//     <div><span class="detail-label">발주기관</span><span class="detail-value">${data.issuing_org||'-'}</span></div>
+//     <div><span class="detail-label">계약 담당자</span><span class="detail-value">${data.contact_person||'-'}</span></div>
+//     <div><span class="detail-label">사업 예산</span><span class="detail-value">${data.budget||'-'}</span></div>
+//     <div><span class="detail-label">수행 업체</span><span class="detail-value">${data.company_name}</span></div>
+//   </div>`;
+
+//   // Progress steps - 이행 진행 현황
+//   const steps = ['kickoff','test_plan','test_result','final'];
+//   const stepLabels = {'kickoff':'착수보고서','test_plan':'테스트 계획서','test_result':'테스트 결과 보고서','final':'완료보고서'};
+//   html += `<div class="doc-section-title">이행 진행 현황</div>`;
+//   html += `<div class="progress-steps">`;
+//   steps.forEach((s, i) => {
+//     const del = data.deliverables.find(d => d.type === s);
+//     const done = del && del.status === 'submitted';
+//     const hasFile = del && del.has_file;
+//     // 파일이 있고 제출완료일 때만 done 색상, 파일 없으면 무색(기본)
+//     const stepClass = done && hasFile ? 'done' : (!done && hasFile ? 'active' : '');
+//     html += `<div class="progress-step ${stepClass}">
+//       <div class="step-dot"></div>
+//       <span>${stepLabels[s]}</span>
+//     </div>`;
+//     if (i < steps.length - 1) {
+//       // 연결선도 파일 있을 때만 색상
+//       const lineActive = done && hasFile ? 'step-line--done' : '';
+//       html += `<div class="step-line ${lineActive}"></div>`;
+//     }
+//   });
+//   html += `</div>`;
+
+//   // Contract docs - 계약 문서 3종 (계약서·RFP·요구사항정의서) — 뷰어 전용, 파일 변경 불가
+//   html += `<div class="doc-section-title">계약 문서</div><ul class="doc-list">`;
+//   data.contract_docs.forEach(doc => {
+//     if (doc.has_file) {
+//       // 등록된 문서 — 클릭하면 계약관리 뷰어로 이동 (보기 전용)
+//       html += `<li class="doc-item">
+//         <div class="doc-icon" style="cursor:pointer" onclick="goToContractView(${doc.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+//         <div class="doc-info" style="cursor:pointer;flex:1" onclick="goToContractView(${doc.id})"><span class="doc-type">${doc.doc_type_display}</span><span class="doc-name">${doc.filename}</span></div>
+//         <button class="btn-file-change" onclick="goToContractView(${doc.id})">
+//           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+//           보기
+//         </button>
+//       </li>`;
+//     } else {
+//     // is_target(기술 적용 결과표, 결과 보고서)이면 날짜 입력 필드 추가
+//     const dueDateInput = del.is_target ? `
+//         <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+//             <span style="font-size:11px;color:#888">마감일:</span>
+//             <input type="date"
+//                 id="dueDate_${del.type}"
+//                 value="${del.due_date || ''}"
+//                 style="font-size:12px;border:1px solid #ddd;
+//                        border-radius:4px;padding:2px 6px"
+//                 onchange="saveDueDate(${data.id},'${del.type}',this.value)">
+//         </div>
+//     ` : '';
+
+//     html += `<li class="doc-item doc-item--pending">
+//         <div class="doc-icon doc-icon--empty">...</div>
+//         <div class="doc-info" style="flex:1">
+//             <span class="doc-type">${del.type_display}${del.due_date ? ' · 마감 '+del.due_date : ''}</span>
+//             <span class="doc-name" style="color:#aaa">미등록</span>
+//             ${dueDateInput}
+//         </div>
+//         <button class="btn-file-change btn-file-upload"
+//             onclick="openFileChange(${data.id},'${del.type}','${del.type_display}',true)">
+//             등록
+//         </button>
+//     </li>`;
+// }
+//   //   } else {
+//   //     // 미등록 문서 — 안내만 (이행관리에서는 등록 불가, 계약관리에서 등록)
+//   //     html += `<li class="doc-item doc-item--pending">
+//   //       <div class="doc-icon doc-icon--empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+//   //       <div class="doc-info" style="flex:1"><span class="doc-type">${doc.doc_type_display}</span><span class="doc-name" style="color:#aaa">미등록</span></div>
+//   //     </li>`;
+//   //   }
+//   // });
+//   // html += `</ul>`;
+
+//   // Deliverables
+//   html += `<div class="doc-section-title">산출물</div><ul class="doc-list">`;
+//   data.deliverables.forEach(del => {
+//     if (del.has_file) {
+//       // AI 분석 버튼 (분석 지원 유형만 활성)
+//       const analyzeBtn = del.analyzable
+//         ? `<button class="btn-file-change" style="background:#eef2ff;border-color:#c7d2fe;color:#4f46e5" onclick="goToDeliverableAnalyze(${del.id})">
+//              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+//              AI 분석
+//            </button>`
+//         : `<button class="btn-file-change" style="opacity:.5;cursor:not-allowed" title="평가기준서 준비 중" disabled>
+//              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+//              AI 분석
+//            </button>`;
+//       html += `<li class="doc-item">
+//         <div class="doc-icon" style="cursor:pointer" onclick="goToDeliverableView(${del.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+//         <div class="doc-info" style="cursor:pointer;flex:1" onclick="goToDeliverableView(${del.id})">
+//           <span class="doc-type">${del.type_display}${del.submitted_date ? ' · 제출 '+del.submitted_date : ''}</span>
+//           <span class="doc-name">${del.filename}</span>
+//         </div>
+//         <div style="display:flex;gap:6px;flex-shrink:0;">
+//           <button class="btn-file-change" onclick="goToDeliverableView(${del.id})">
+//             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+//             보기
+//           </button>
+//           ${analyzeBtn}
+//           <button class="btn-file-change" onclick="openFileChange(${data.id},\`${del.type}\`,\`${del.type_display}\`,true)">
+//             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.79"/></svg>
+//             변경
+//           </button>
+//         </div>
+//       </li>`;
+//     } else {
+//       html += `<li class="doc-item doc-item--pending">
+//         <div class="doc-icon doc-icon--empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+//         <div class="doc-info">
+//           <span class="doc-type">${del.type_display}${del.due_date ? ' · 제출 '+del.due_date : ''}</span>
+//           <span class="doc-name" style="color:#aaa">미등록</span>
+//         </div>
+//         <button class="btn-file-change btn-file-upload" onclick="openFileChange(${data.id},\`${del.type}\`,\`${del.type_display}\`,true)">
+//           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+//           등록
+//         </button>
+//       </li>`;
+//     }
+//   });
+//   html += `</ul>`;
+//   html += `<p class="perf-note">산출물 제출일정은 착수보고서·계약서 기준으로 자동 반영되어 이행 달력에 표시됩니다.</p>`;
+
+//   document.getElementById('perfDetailBody').innerHTML = html;
+//   openModal('modalPerfDetail');
+// }
 
 // ── File Change ──
 let fcIsDeliverable = false;
@@ -486,6 +635,25 @@ window.submitFileChange = function() {
     }
   });
 };
+
+function saveDueDate(perfId, deliverableType, dueDate) {
+    fetch(`/performance/${perfId}/deliverable/due-date/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCsrf(),
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            deliverable_type: deliverableType,
+            due_date: dueDate,
+        }),
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'ok') location.reload();
+    });
+}
+
 
 // ── Navigation: 뷰어 / AI 분석 ──
 window.goToContractView = function(docId) {

@@ -159,8 +159,16 @@ def document_ai_status(request, task_id):
 @login_required
 @require_POST
 def document_complete_review(request, doc_id):
+    import re
+    from datetime import date
+    from performance.models import Deliverable, Performance
+
     doc = get_object_or_404(ContractDocument, pk=doc_id, contract__created_by=request.user)
+    doc.review_status = 'reviewed'
+    doc.save()
+
     contract = doc.contract
+    contract.status = 'in_progress'
 
     # ── 이관 전 검증 ──
     # 1. 필수 문서 3종 확인
@@ -198,24 +206,111 @@ def document_complete_review(request, doc_id):
 
     contract.status = 'in_progress'
 
-    # 계약서에서 계약기간 추출
     try:
         from contracts.utils import extract_text
-        import re
-        from datetime import date
-
         text = extract_text(doc.file.path)
-        pattern = r"(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일부터\s*(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일까지"
-        match = re.search(pattern, text)
+
+        # ── 1. 계약기간 추출 ─────────────────────────────────────────
+        period_pattern = (
+            r"(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일\s*부터\s*"
+            r"(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일\s*까지"
+        )
+        match = re.search(period_pattern, text)
         if match:
             y1, m1, d1, y2, m2, d2 = map(int, match.groups())
             contract.contract_start = date(y1, m1, d1)
             contract.contract_end   = date(y2, m2, d2)
-    except Exception:
-        pass
+            print(f"[계약기간] {contract.contract_start} ~ {contract.contract_end}")
 
-    contract.save()
+        contract.save()
+
+        # ── 2. 산출물 일정 추출 (정규식) ─────────────────────────────
+        performance, _ = Performance.objects.get_or_create(contract=contract)
+
+        # 날짜 패턴
+        date_patterns = [
+            r"(\d{4})[.\-](\d{1,2})[.\-](\d{1,2})",
+            r"(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일",
+        ]
+
+        deliverable_keywords = [
+            {
+                'type': 'final',
+                'label': '사업추진결과보고서',
+                'keywords': [
+                    '최종결과보고서', '최종 결과보고서', '결과보고서',
+                    '최종보고서', '완료보고서', '결과 보고서', '사업추진결과보고서'
+                ],
+            },
+            {
+                'type': 'tech_apply',
+                'label': '기술 적용 결과표',
+                'keywords': [
+                    '기술적용결과표', '기술 적용 결과표', '기술적용계획표',
+                    '기술 적용 계획표', '기술적용',
+                ],
+            },
+        ]
+
+        for item in deliverable_keywords:
+            due_date = None
+
+            for keyword in item['keywords']:
+                idx = text.find(keyword)
+                if idx == -1:
+                    continue
+
+                surrounding = text[max(0, idx - 20): idx + 150]
+
+                for pattern in date_patterns:
+                    date_match = re.search(pattern, surrounding)
+                    if date_match:
+                        try:
+                            y, m, d = map(int, date_match.groups())
+                            due_date = date(y, m, d)
+                            print(f"[산출물 일정] {item['label']}: {due_date}")
+                        except ValueError:
+                            continue
+                        break
+
+                if due_date:
+                    break
+
+            # 추출 성공이든 실패든 저장
+            # 실패 시 due_date=None → 이행관리 화면에서 수동 입력
+            Deliverable.objects.update_or_create(
+                performance=performance,
+                deliverable_type=item['type'],
+                defaults={'due_date': due_date},
+            )
+            if not due_date:
+                print(f"[산출물 일정] {item['label']}: 추출 실패 → 수동 입력 필요")
+
+    except Exception as e:
+        print(f"[document_complete_review] 처리 실패: {e}")
+        import traceback
+        traceback.print_exc()
+
     return JsonResponse({'status': 'ok', 'redirect': '/performance/'})
+
+    # 계약서에서 계약기간 추출
+    # try:
+    #     from contracts.utils import extract_text
+    #     import re
+    #     from datetime import date
+
+    #     text = extract_text(doc.file.path)
+    #     pattern = r"(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일부터\s*(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일까지"
+    #     match = re.search(pattern, text)
+    #     if match:
+    #         y1, m1, d1, y2, m2, d2 = map(int, match.groups())
+    #         contract.contract_start = date(y1, m1, d1)
+    #         contract.contract_end   = date(y2, m2, d2)
+    # except Exception:
+    #     pass
+
+    # contract.save()
+    # return JsonResponse({'status': 'ok', 'redirect': '/performance/'})
 
 
 @login_required

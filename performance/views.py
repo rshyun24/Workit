@@ -6,6 +6,7 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST
 from contracts.models import Contract
 from .models import Performance, Deliverable
+from .models import Deliverable, Notification, Performance
 
 PROJECT_COLORS = [
     '#4F63D2', '#00B894', '#6C5CE7', '#E67E22',
@@ -39,12 +40,38 @@ def performance_list(request):
     ).order_by('-created_at').select_related('contract')
 
     # Build calendar events - 산출물별 기간(start~end) 바 형태로 표시
+    # calendar_events = []
+    # for idx, perf in enumerate(performances):
+    #     color = PROJECT_COLORS[idx % len(PROJECT_COLORS)]
+    #     contract = perf.contract
+    #     if contract.contract_start and contract.contract_end:
+    #         is_done = contract.status == 'completed'
+    #         calendar_events.append({
+    #             'id': f'contract_period_{perf.id}',
+    #             'performance_id': perf.id,
+    #             'project_name': contract.project_name,
+    #             'deliverable_type': '계약 기간',
+    #             'start_date': contract.contract_start.strftime('%Y-%m-%d'),
+    #             'end_date': contract.contract_end.strftime('%Y-%m-%d'),
+    #             'due_date': contract.contract_end.strftime('%Y-%m-%d'),
+    #             'submitted_date': None,
+    #             'status': contract.status,
+    #             'color': '#999999' if is_done else color,
+    #             'is_completed': is_done,
+    #             'is_contract_period': True,
+    #         })
+
+    TARGET_DELIVERABLE_TYPES = ['tech_apply', 'final']
+
     calendar_events = []
+
     for idx, perf in enumerate(performances):
-        color = PROJECT_COLORS[idx % len(PROJECT_COLORS)]
+        color    = PROJECT_COLORS[idx % len(PROJECT_COLORS)]
         contract = perf.contract
+        is_done  = contract.status == 'completed'
+
+        # 1. 계약 전체 기간 줄
         if contract.contract_start and contract.contract_end:
-            is_done = contract.status == 'completed'
             calendar_events.append({
                 'id': f'contract_period_{perf.id}',
                 'performance_id': perf.id,
@@ -58,6 +85,30 @@ def performance_list(request):
                 'color': '#999999' if is_done else color,
                 'is_completed': is_done,
                 'is_contract_period': True,
+            })
+
+        # 2. 기술 적용 결과표 + 결과 보고서만 달력 표시
+        target_deliverables = perf.deliverables.filter(
+            deliverable_type__in=TARGET_DELIVERABLE_TYPES,
+        ).order_by('due_date')
+
+        for d in target_deliverables:
+            if not d.due_date:
+                continue  # due_date 없으면 달력 표시 안 함
+
+            calendar_events.append({
+                'id': d.id,
+                'performance_id': perf.id,
+                'project_name': contract.project_name,
+                'deliverable_type': d.get_deliverable_type_display(),
+                'start_date': d.due_date.strftime('%Y-%m-%d'),
+                'end_date': d.due_date.strftime('%Y-%m-%d'),
+                'due_date': d.due_date.strftime('%Y-%m-%d'),
+                'submitted_date': d.submitted_date.strftime('%Y-%m-%d') if d.submitted_date else None,
+                'status': d.status,
+                'color': '#999999' if (is_done or d.status == 'submitted') else color,
+                'is_completed': is_done or d.status == 'submitted',
+                'is_contract_period': False,
             })
 
     return render(request, 'performance/performance_list.html', {
@@ -76,12 +127,11 @@ def performance_detail_api(request, pk):
     contract = perf.contract
 
     # Build deliverable list with all 4 types
-    TYPE_ORDER = ['kickoff', 'test_plan', 'test_result', 'final']
+    TYPE_ORDER = ['kickoff', 'tech_apply', 'final']
     TYPE_LABELS = {
-        'kickoff': '착수보고서',
-        'test_plan': '테스트 계획서',
-        'test_result': '테스트 결과 보고서',
-        'final': '완료보고서',
+        'kickoff': '사업수행계획서',
+        'tech_apply': '기술적용결과표',
+        'final': '사업추진결과보고서',
     }
 
     existing = {d.deliverable_type: d for d in perf.deliverables.all()}
@@ -137,7 +187,7 @@ def performance_detail_api(request, pk):
         'deliverables': deliverables_data,
         'contract_docs': contract_docs,
         'progress': progress,
-        'total': 4,
+        'total': len(TYPE_ORDER),
     })
 
 
@@ -634,3 +684,33 @@ def _mock_kickoff_analysis():
     ]
 
     return {'qualities': qualities, 'sections': sections}
+
+@login_required
+def notification_list(request):
+    notifs = Notification.objects.filter(user=request.user, is_read=False)
+    return JsonResponse({
+        'unread_count': notifs.count(),
+        'notifications': [
+            {
+                'id': n.id,
+                'message': n.message,
+                'url': n.url,
+                'created_at': n.created_at.strftime('%Y-%m-%d %H:%M'),
+            }
+            for n in notifs
+        ],
+    })
+
+
+@login_required
+@require_POST
+def notification_read(request, pk):
+    Notification.objects.filter(pk=pk, user=request.user).update(is_read=True)
+    return JsonResponse({'status': 'ok'})
+
+
+@login_required
+@require_POST
+def notification_read_all(request):
+    Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+    return JsonResponse({'status': 'ok'})

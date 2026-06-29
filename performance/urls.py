@@ -15,4 +15,9 @@ urlpatterns = [
     path('deliverable/<int:del_id>/page/<int:page>/', views.deliverable_page_image, name='deliverable_page_image'),
     path('deliverable/<int:del_id>/ai-analyze/', views.deliverable_ai_analyze, name='deliverable_ai_analyze'),
     path('deliverable/<int:del_id>/export-pdf/', views.deliverable_export_pdf, name='deliverable_export_pdf'),
+
+    # 알림 경로 추가
+    path('notifications/', views.notification_list, name='notification_list'),
+    path('notifications/<int:pk>/read/', views.notification_read, name='notification_read'),
+    path('notifications/read-all/', views.notification_read_all, name='notification_read_all'),
 ]
