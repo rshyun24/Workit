@@ -26,7 +26,7 @@ _PROJECT_ROOT = _THIS_DIR.parent
 
 from FlagEmbedding import BGEM3FlagModel
 from qdrant_client import QdrantClient
-from yoonha_contract_rag import (
+from yoonha_law_rag import (
     load_laws_ref,
     search_law_for_clause,
     CrossEncoderReranker,
