@@ -18,6 +18,24 @@ def _safe_reverse(name, fallback):
         return fallback
 
 
+# 시스템관리자(is_system_admin)는 대시보드/계약관리/이행관리 등 일반 업무 화면에
+# 접근할 수 없다. URL을 직접 입력해도 막아야 하므로 화이트리스트 방식으로 제한한다.
+# (블랙리스트로 "이건 막자"를 하나씩 추가하면 새 view가 생길 때 빠뜨리기 쉽다.)
+SYSTEM_ADMIN_ALLOWED_PREFIXES = (
+    "/manage/",       # 계정관리, 부서관리, 접속기록
+    "/mypage/",       # 마이페이지 조회/수정
+    "/help/",         # 도움말
+    "/notification/", # 알림 토글
+    "/static/",       # 정적 파일(DEBUG 모드에서 미들웨어를 통과함)
+)
+
+
+def _is_system_admin_allowed_path(path, login_path, logout_path, change_password_path):
+    if path in {login_path, logout_path, change_password_path}:
+        return True
+    return any(path.startswith(prefix) for prefix in SYSTEM_ADMIN_ALLOWED_PREFIXES)
+
+
 class AccountSecurityMiddleware:
     """계정 잠금, 비밀번호 변경 강제, 동일계정 세션 제어를 담당한다.
 
@@ -60,5 +78,9 @@ class AccountSecurityMiddleware:
                 if user.must_change_password and not is_allowed_path:
                     _safe_message(request, "info", "계속 사용하려면 먼저 비밀번호를 변경해야 합니다.")
                     return redirect("change_password")
+
+                if getattr(user, "is_system_admin", False):
+                    if not _is_system_admin_allowed_path(path, login_path, logout_path, change_password_path):
+                        return redirect("account_list")
 
         return self.get_response(request)

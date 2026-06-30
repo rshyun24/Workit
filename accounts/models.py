@@ -6,10 +6,37 @@ from django.db import models
 from django.utils import timezone
 
 
-class Organization(models.Model):
-    """부서/조직 단위.
+class LoginHistory(models.Model):
+    """로그인 시도 접속기록.
 
-    사용자(User)와 문서(계약/이행)의 접근 범위를 이 단위로 격리한다.
+    User.current_session_key는 "현재" 세션 1개만 덮어쓰기 때문에 감사 목적에는
+    부족하다. 이 모델은 성공/실패 모든 로그인 시도를 누적 기록하여
+    관리자가 계정별 접속 이력을 추적할 수 있게 한다.
+    """
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="login_histories"
+    )
+    ip_address = models.GenericIPAddressField("접속 IP", null=True, blank=True)
+    success = models.BooleanField("성공 여부")
+    user_agent = models.CharField("User-Agent", max_length=255, blank=True)
+    created_at = models.DateTimeField("접속 일시", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "접속기록"
+        verbose_name_plural = "접속기록 목록"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.user} - {'성공' if self.success else '실패'} ({self.created_at:%Y-%m-%d %H:%M})"
+
+
+class Organization(models.Model):
+    """소속부서 단위.
+
+    하나의 Workit 시스템은 하나의 소속기관(예: ○○교육청)에 설치되어 운영되며,
+    그 기관 산하의 부서들을 시스템 관리자가 이 모델로 직접 생성·관리한다.
+    사용자(User)와 문서(계약/이행)의 접근 범위는 이 부서 단위로 격리된다.
     서로 다른 부서에 속한 사용자는 서로의 문서를 볼 수 없다.
     """
 
@@ -17,10 +44,11 @@ class Organization(models.Model):
     code = models.CharField("부서코드", max_length=20, unique=True)
     is_active = models.BooleanField("사용 여부", default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField("수정 일시", auto_now=True)
 
     class Meta:
-        verbose_name = "부서"
-        verbose_name_plural = "부서 목록"
+        verbose_name = "소속부서"
+        verbose_name_plural = "소속부서 목록"
         ordering = ["name"]
 
     def __str__(self):
@@ -55,12 +83,14 @@ class User(AbstractUser):
     last_name = models.CharField("성", max_length=150)
     email = models.EmailField("이메일")
 
-    department = models.CharField("부서", max_length=100)
+    # department(CharField)는 Organization(소속부서) FK 도입 이후 더 이상 사용하지 않는다.
+    # 컬럼 삭제는 별도 마이그레이션으로 추후 처리 (현재는 폼/템플릿에서만 미노출).
+    department = models.CharField("소속부서(미사용, deprecated)", max_length=100, blank=True)
     position = models.CharField("직급", max_length=50)
     phone = models.CharField("전화번호", max_length=20)
 
-    # 기존: organization = models.CharField("소속기관", max_length=100)
-    # 변경: 부서 단위 데이터 격리를 위해 Organization을 FK로 연결한다.
+    # 시스템 전체는 하나의 소속기관(예: ○○교육청)에 설치되어 운영된다.
+    # 그 기관 산하 부서는 관리자가 이 FK를 통해 직접 생성·관리한다.
     # 관리자(is_superuser) 계정은 특정 부서에 속하지 않아도 되므로 null 허용.
     organization = models.ForeignKey(
         Organization,
@@ -78,14 +108,15 @@ class User(AbstractUser):
     lock_reason = models.CharField("잠금 사유", max_length=30, choices=LOCK_REASON_CHOICES, blank=True)
     current_session_key = models.CharField("현재 세션키", max_length=40, null=True, blank=True)
     notification_enabled = models.BooleanField("알림 수신", default=True)
+    updated_at = models.DateTimeField("수정 일시", auto_now=True)
 
     REQUIRED_FIELDS = [
         "last_name",
         "first_name",
         "email",
         "phone",
-        "department",
         "position",
+        # "department"는 deprecated(미사용)되어 필수 입력에서 제외한다.
         # "organization"은 관리자(is_superuser) 계정이 부서 미배정일 수 있어
         # createsuperuser 필수 입력에서 제외한다.
     ]
@@ -195,4 +226,4 @@ class User(AbstractUser):
         )
 
     def __str__(self):
-        return f"{self.korean_name()} ({self.department})"
+        return f"{self.korean_name()} ({self.organization})"

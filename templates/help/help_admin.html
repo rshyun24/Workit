@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+{% block title %}도움말 - Workit{% endblock %}
+
+{% block extra_css %}
+<style>
+  .help-wrap { max-width: 880px; }
+
+  .help-section { margin-bottom: 32px; }
+  .help-section-title { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  .help-section-desc { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; }
+
+  .guide-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .guide-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px;
+  }
+  .guide-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .guide-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .guide-icon svg { width: 20px; height: 20px; }
+  .guide-name { font-size: 15px; font-weight: 700; }
+  .guide-list { display: flex; flex-direction: column; gap: 10px; }
+  .guide-li { display: flex; gap: 10px; font-size: 13px; line-height: 1.55; }
+  .guide-li-mark {
+    flex-shrink: 0; width: 18px; height: 18px; border-radius: 50%;
+    background: var(--primary-light); color: var(--primary);
+    display: flex; align-items: center; justify-content: center; margin-top: 1px;
+  }
+  .guide-li-mark svg { width: 11px; height: 11px; }
+  .guide-li strong { font-weight: 700; }
+  .guide-li span { color: var(--text-secondary); }
+
+  .faq-list { display: flex; flex-direction: column; gap: 8px; }
+  .faq-item {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); overflow: hidden;
+  }
+  .faq-item[open] { border-color: var(--primary); }
+  .faq-q {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 14px 18px; font-size: 14px; font-weight: 600; cursor: pointer;
+    list-style: none; transition: background var(--transition);
+  }
+  .faq-q::-webkit-details-marker { display: none; }
+  .faq-q:hover { background: var(--bg); }
+  .faq-q-label { display: flex; align-items: center; gap: 10px; }
+  .faq-q-badge {
+    flex-shrink: 0; width: 22px; height: 22px; border-radius: 6px;
+    background: var(--primary-light); color: var(--primary);
+    font-size: 12px; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .faq-chevron { color: var(--text-hint); transition: transform var(--transition); flex-shrink: 0; }
+  .faq-chevron svg { width: 16px; height: 16px; display: block; }
+  .faq-item[open] .faq-chevron { transform: rotate(180deg); }
+  .faq-a {
+    padding: 0 18px 16px 50px; font-size: 13px; line-height: 1.7;
+    color: var(--text-secondary);
+  }
+
+  .help-contact {
+    display: flex; align-items: center; justify-content: space-between; gap: 20px;
+    background: linear-gradient(135deg, var(--primary) 0%, #6366F1 100%);
+    border-radius: var(--radius); padding: 24px 28px; color: #fff;
+  }
+  .help-contact h3 { font-size: 16px; font-weight: 700; }
+  .help-contact p { font-size: 13px; opacity: 0.85; margin-top: 4px; }
+  .help-contact-info { display: flex; gap: 28px; }
+  .contact-item { font-size: 13px; }
+  .contact-item span { display: block; opacity: 0.7; font-size: 11px; margin-bottom: 2px; }
+  .contact-item strong { font-weight: 700; }
+
+  @media (max-width: 768px) {
+    .guide-grid { grid-template-columns: 1fr; }
+    .help-contact { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="help-wrap">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">도움말</h1>
+      <p class="page-desc">시스템 관리자가 알아야 할 계정·부서 관리 안내입니다.</p>
+    </div>
+  </div>
+
+  <!-- ── 메뉴별 가이드 ── -->
+  <section class="help-section">
+    <h2 class="help-section-title">메뉴별 사용 가이드</h2>
+    <p class="help-section-desc">관리자 화면의 핵심 기능을 정리했습니다.</p>
+    <div class="guide-grid">
+
+      <!-- 계정관리 -->
+      <div class="guide-card">
+        <div class="guide-head">
+          <div class="guide-icon stat-icon--blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div class="guide-name">계정관리</div>
+        </div>
+        <div class="guide-list">
+          <div class="guide-li"><span class="guide-li-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><span><strong>계정 생성</strong> 버튼으로 새 사용자를 등록하면 초기 비밀번호가 자동 부여되고, 최초 로그인 시 변경이 강제됩니다.</span></div>
+          <div class="guide-li"><span class="guide-li-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><span>목록의 행을 클릭하면 <strong>정보 수정 모달</strong>이 열립니다 — 이름·연락처·소속부서·관리자 권한을 변경할 수 있습니다.</span></div>
+          <div class="guide-li"><span class="guide-li-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><span>같은 모달에서 <strong>비밀번호 초기화</strong>, <strong>강제 로그아웃</strong>, <strong>계정 비활성화</strong>를 즉시 실행할 수 있습니다.</span></div>
+          <div class="guide-li"><span class="guide-li-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><span>목록의 <strong>잠금/잠금해제</strong> 버튼은 5회 연속 로그인 실패 등으로 잠긴 계정을 즉시 풀어줄 때 사용합니다.</span></div>
+        </div>
+      </div>
+
+      <!-- 부서 관리 -->
+      <div class="guide-card">
+        <div class="guide-head">
+          <div class="guide-icon stat-icon--orange">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          </div>
+          <div class="guide-name">부서 관리</div>
+        </div>
+        <div class="guide-list">
+          <div class="guide-li"><span class="guide-li-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><span>부서는 <strong>사용자와 문서(계약/이행) 접근 범위를 나누는 기준 단위</strong>입니다. 서로 다른 부서의 사용자는 서로의 문서를 볼 수 없습니다.</span></div>
+          <div class="guide-li"><span class="guide-li-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><span>오른쪽 <strong>부서 추가</strong> 폼으로 새 부서를 등록한 뒤, 계정 생성 시 소속부서로 선택할 수 있습니다.</span></div>
+          <div class="guide-li"><span class="guide-li-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><span>목록의 행을 클릭하면 <strong>부서명·부서코드 수정</strong>, <strong>사용 여부 토글</strong>, <strong>부서 삭제</strong>가 가능합니다.</span></div>
+          <div class="guide-li"><span class="guide-li-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><span>소속된 사용자가 있는 부서는 <strong>삭제할 수 없습니다</strong> — 먼저 사용자를 다른 부서로 옮기거나 비활성화하세요.</span></div>
+        </div>
+      </div>
+
+      <!-- 접속기록 -->
+      <div class="guide-card">
+        <div class="guide-head">
+          <div class="guide-icon stat-icon--purple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div class="guide-name">접속기록</div>
+        </div>
+        <div class="guide-list">
+          <div class="guide-li"><span class="guide-li-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><span>최근 <strong>1년간</strong>의 모든 계정 로그인 시도(성공/실패) 기록을 확인할 수 있습니다.</span></div>
+          <div class="guide-li"><span class="guide-li-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><span>행을 클릭하면 <strong>IP 주소와 User-Agent</strong> 등 상세 정보를 모달로 확인할 수 있습니다.</span></div>
+          <div class="guide-li"><span class="guide-li-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><span>짧은 시간 내 반복된 <strong>실패 기록</strong>이나 낯선 IP가 보이면 보안 점검이 필요할 수 있습니다.</span></div>
+        </div>
+      </div>
+
+      <!-- 마이페이지 -->
+      <div class="guide-card">
+        <div class="guide-head">
+          <div class="guide-icon stat-icon--green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <div class="guide-name">마이페이지</div>
+        </div>
+        <div class="guide-list">
+          <div class="guide-li"><span class="guide-li-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><span><strong>내 정보</strong>(이름·이메일·전화번호·직급)를 조회하고 수정합니다.</span></div>
+          <div class="guide-li"><span class="guide-li-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><span><strong>계정 설정</strong>에서 비밀번호를 변경하거나 로그아웃합니다.</span></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── FAQ ── -->
+  <section class="help-section">
+    <h2 class="help-section-title">자주 묻는 질문</h2>
+    <div class="faq-list">
+
+      <details class="faq-item">
+        <summary class="faq-q">
+          <span class="faq-q-label"><span class="faq-q-badge">Q</span>관리자는 왜 계약관리·이행관리 화면이 안 보이나요?</span>
+          <span class="faq-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </summary>
+        <div class="faq-a">관리자 계정은 시스템 운영(계정·부서 관리)을 전담하며, 부서별 계약·이행 문서는 정책상 조회하지 않습니다. 해당 메뉴와 URL은 관리자 계정에서 접근이 차단되어 있습니다.</div>
+      </details>
+
+      <details class="faq-item">
+        <summary class="faq-q">
+          <span class="faq-q-label"><span class="faq-q-badge">Q</span>계정을 잠금 처리하는 것과 비활성화하는 것의 차이는 무엇인가요?</span>
+          <span class="faq-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </summary>
+        <div class="faq-a"><strong>잠금</strong>은 로그인 실패 누적·비밀번호 만료 등 운영 정책에 따른 일시적 제한이며 해제하면 즉시 다시 사용할 수 있습니다. <strong>비활성화</strong>는 퇴사 등으로 더 이상 시스템을 쓰지 않는 계정을 막을 때 사용하며, 즉시 강제 로그아웃되고 다시 활성화하기 전까지 로그인이 불가합니다.</div>
+      </details>
+
+      <details class="faq-item">
+        <summary class="faq-q">
+          <span class="faq-q-label"><span class="faq-q-badge">Q</span>비밀번호를 초기화하면 사용자에게 어떻게 안내해야 하나요?</span>
+          <span class="faq-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </summary>
+        <div class="faq-a">초기화하면 시스템 기본 초기 비밀번호로 재설정되고, 해당 사용자는 다음 로그인 시 비밀번호 변경이 강제됩니다. 초기 비밀번호는 별도 채널(전화, 사내 메신저 등)로 직접 안내하세요 — 화면에는 표시되지 않습니다.</div>
+      </details>
+
+      <details class="faq-item">
+        <summary class="faq-q">
+          <span class="faq-q-label"><span class="faq-q-badge">Q</span>부서를 삭제할 수 없다고 나옵니다.</span>
+          <span class="faq-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </summary>
+        <div class="faq-a">해당 부서에 소속된 사용자가 한 명이라도 있으면 데이터 보호를 위해 삭제가 차단됩니다. 먼저 계정 수정 화면에서 사용자들을 다른 부서로 옮기거나 비활성화한 뒤 다시 시도하세요. 당장 쓰지 않을 부서라면 삭제 대신 <strong>사용 여부</strong>를 꺼두는 것도 방법입니다.</div>
+      </details>
+
+    </div>
+  </section>
+
+  <!-- ── 문의 ── -->
+  <section class="help-section">
+    <div class="help-contact">
+      <div>
+        <h3>원하는 답을 찾지 못하셨나요?</h3>
+        <p>운영 지원팀이 도와드리겠습니다.</p>
+      </div>
+      <div class="help-contact-info">
+        <div class="contact-item">
+          <span>이메일</span>
+          <strong>support@workit.go.kr</strong>
+        </div>
+        <div class="contact-item">
+          <span>전화 문의</span>
+          <strong>1500-0000 (평일 09:00~18:00)</strong>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+{% endblock %}

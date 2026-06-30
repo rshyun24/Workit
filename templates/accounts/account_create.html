@@ -60,11 +60,6 @@
       </div>
     </div>
 
-    <div class="form-group">
-      <label class="form-label">부서(상세)</label>
-      <input type="text" name="department" class="form-input" value="{{ form.department.value|default:'' }}" required>
-    </div>
-
     <div class="form-group" style="display:flex; align-items:center; gap:8px; background:var(--bg); padding:12px 14px; border-radius:var(--radius-sm);">
       <input type="checkbox" name="is_superuser" id="id_is_superuser" {% if form.is_superuser.value %}checked{% endif %} style="width:16px; height:16px;">
       <label for="id_is_superuser" style="font-size:13px; margin:0;">

@@ -177,7 +177,7 @@ input, textarea { font-family: inherit; font-size: inherit; }
 .btn-primary { background: var(--primary); color: #fff; }
 .btn-primary:hover { background: var(--primary-dark); }
 .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-.btn-ghost { background: transparent; color: var(--text-primary); border: 1px solid var(--border); }
+.btn-ghost { background: transparent; color: var(--text-primary); border: 1px solid #c8c8cc; }
 .btn-ghost:hover { background: var(--bg); }
 .btn-full { width: 100%; justify-content: center; padding: 12px; font-size: 15px; }
 .btn-sm { padding: 6px 12px; font-size: 12px; }

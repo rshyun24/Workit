@@ -30,7 +30,6 @@ class AdminUserCreationForm(forms.ModelForm):
             "first_name",
             "email",
             "phone",
-            "department",
             "position",
             "organization",
         )
@@ -66,11 +65,66 @@ class AdminUserCreationForm(forms.ModelForm):
         return user
 
 
+class AccountEditForm(forms.ModelForm):
+    """관리자 전용 사용자 정보 수정 폼.
+
+    아이디(username)는 변경하지 않으며, 비밀번호도 이 폼에서는 다루지 않는다
+    (비밀번호 재설정은 잠금/해제 또는 별도 절차로 처리).
+    """
+
+    is_superuser = forms.BooleanField(
+        label="관리자 권한 부여",
+        required=False,
+        help_text="체크하면 전체 부서의 모든 문서를 조회/관리할 수 있는 관리자 계정이 됩니다.",
+    )
+
+    class Meta:
+        model = User
+        fields = (
+            "last_name",
+            "first_name",
+            "email",
+            "phone",
+            "position",
+            "organization",
+        )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["organization"].queryset = Organization.objects.filter(is_active=True)
+        self.fields["organization"].required = False
+        self.fields["organization"].empty_label = "선택하세요"
+        if self.instance and self.instance.pk:
+            self.fields["is_superuser"].initial = self.instance.is_superuser
+
+    def clean(self):
+        cleaned_data = super().clean()
+        is_superuser = cleaned_data.get("is_superuser")
+        organization = cleaned_data.get("organization")
+        if not is_superuser and not organization:
+            self.add_error("organization", "일반사용자 계정은 소속부서를 반드시 선택해야 합니다.")
+        return cleaned_data
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.is_superuser = self.cleaned_data.get("is_superuser", False)
+        if commit:
+            user.save()
+        return user
+
+
 class OrganizationCreateForm(forms.ModelForm):
     class Meta:
         model = Organization
         fields = ["name", "code"]
         labels = {"name": "부서명", "code": "부서코드"}
+
+
+class OrganizationEditForm(forms.ModelForm):
+    class Meta:
+        model = Organization
+        fields = ["name", "code", "is_active"]
+        labels = {"name": "부서명", "code": "부서코드", "is_active": "사용 여부"}
 
 
 class WorkitPasswordChangeForm(PasswordChangeForm):

@@ -24,6 +24,7 @@
     </div>
 
     <nav class="sidebar-nav">
+      {% if not user.is_system_admin %}
       <a href="{% url 'home' %}" class="nav-item {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         <span class="nav-label">대시보드</span>
@@ -36,16 +37,21 @@
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></svg>
         <span class="nav-label">이행관리</span>
       </a>
+      {% endif %}
+      {% if user.is_system_admin %}
+      <a href="{% url 'account_list' %}" class="nav-item {% if 'account' in request.resolver_match.url_name %}active{% endif %}">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span class="nav-label">계정관리</span>
+      </a>
+      <a href="{% url 'organization_list' %}" class="nav-item {% if 'organization' in request.resolver_match.url_name %}active{% endif %}">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+        <span class="nav-label">부서관리</span>
+      </a>
+      {% endif %}
       <a href="{% url 'mypage' %}" class="nav-item {% if request.resolver_match.url_name == 'mypage' %}active{% endif %}">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         <span class="nav-label">마이페이지</span>
       </a>
-      {% if user.is_system_admin %}
-      <a href="{% url 'account_list' %}" class="nav-item {% if 'account' in request.resolver_match.url_name or 'organization' in request.resolver_match.url_name %}active{% endif %}">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        <span class="nav-label">계정관리</span>
-      </a>
-      {% endif %}
     </nav>
 
     <!-- 하단 고정: 도움말 + 알림 (프로필 카드 바로 위) -->
@@ -54,6 +60,7 @@
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         <span class="nav-label">도움말</span>
       </a>
+      {% if not user.is_system_admin %}
       <div class="notif-wrap" style="position:relative;">
         <button onclick="toggleNotifDropdown()" class="nav-item notif-nav-btn">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -75,6 +82,7 @@
           </ul>
         </div>
       </div>
+      {% endif %}
     </div>
 
     <!-- 프로필 카드 + 접기 버튼 -->
@@ -163,8 +171,8 @@
 
 <script src="{% static 'js/main.js' %}"></script>
 
-<!-- 알림 JS 추가 -->
-{% if user.is_authenticated %}
+<!-- 알림 JS 추가 (관리자는 계약/이행 알림 대상이 아니므로 제외) -->
+{% if user.is_authenticated and not user.is_system_admin %}
 <script>
 function fetchNotifications() {
     fetch('/performance/notifications/')
