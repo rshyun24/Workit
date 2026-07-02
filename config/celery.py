@@ -17,6 +17,6 @@ app.conf.broker_transport_options = {
 app.conf.beat_schedule = {
     'check-deliverable-deadlines': {
         'task': 'performance.tasks.check_deadlines',
-        'schedule': crontab(hour=12, minute=0),  # 매일 오전 10시
+        'schedule': crontab(hour=10, minute=0),  # 매일 오전 10시
     },
 }

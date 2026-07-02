@@ -16,7 +16,11 @@ class Performance(models.Model):
         return f"{self.contract.project_name} 이행관리"
 
     def progress_count(self):
-        return self.deliverables.filter(status='submitted').count()
+        valid_types = [t for t, _ in Deliverable.TYPE_CHOICES]
+        return self.deliverables.filter(
+            status='submitted',
+            deliverable_type__in=valid_types,
+        ).count()
 
     def total_count(self):
         return 3  # 사업수행계획서, 기술적용결과표, 사업추진결과보고서
@@ -33,7 +37,7 @@ class Performance(models.Model):
 class Deliverable(models.Model):
     TYPE_CHOICES = [
         ('kickoff', '사업수행계획서'),
-        ('tech_apply',  '기술 적용 결과표'),
+        ('tech_apply',  '기술적용결과표'),
         ('final', '사업추진결과보고서'),
     ]
     STATUS_CHOICES = [

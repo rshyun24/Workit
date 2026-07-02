@@ -93,7 +93,7 @@ input, textarea { font-family: inherit; font-size: inherit; }
 .sidebar.collapsed .sidebar-bottom { padding: 0 0 4px; }
 .sidebar.collapsed .notif-nav-btn { justify-content: center; padding: 12px; }
 .sidebar.collapsed .notif-nav-btn .nav-label { display: none; }
-.sidebar.collapsed .notif-nav-btn #notifBadge { display: none !important; }
+/* .sidebar.collapsed .notif-nav-btn #notifBadge { display: none !important; } */
 
 /* collapsed 시 로고·아바타를 nav-icon과 동일한 가운데(32px) 정렬 */
 .sidebar.collapsed .sidebar-header { padding: 16px 0; }
@@ -397,12 +397,12 @@ input, textarea { font-family: inherit; font-size: inherit; }
 .perf-note { font-size: 11px; color: var(--text-hint); margin-top: 12px; }
 
 /* Progress Steps */
-.progress-steps { display: flex; align-items: center; margin: 16px 0; }
+.progress-steps { display: flex; align-items: center; justify-content: space-between; margin: 16px 0; }
 .progress-step { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .step-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--border); border: 2px solid var(--border); }
 .progress-step.done .step-dot { background: var(--success); border-color: var(--success); }
 .progress-step.active .step-dot { background: var(--primary); border-color: var(--primary); }
-.progress-step span { font-size: 10px; color: var(--text-secondary); text-align: center; max-width: 60px; line-height: 1.3; }
+.progress-step span { font-size: 10px; color: var(--text-secondary); text-align: center; max-width: none; white-space: nowrap; line-height: 1.3; }
 .step-line { flex: 1; height: 2px; background: var(--border); margin: 0 4px; align-self: start; margin-top: 6px; }
 .step-line--done { background: var(--success); }
 
@@ -499,4 +499,22 @@ input, textarea { font-family: inherit; font-size: inherit; }
   justify-content: center;
   padding: 12px;
   font-size: 15px;
+}
+
+/* 사이드바 접힘 상태일 때 알림 배지 위치 변경 */
+.sidebar.collapsed .notif-nav-btn {
+  position: relative;
+}
+
+.sidebar.collapsed #notifBadge {
+  display: block !important;
+  position: absolute;
+  top: 2px;
+  right: 8px;
+  margin-left: 0;
+  width: 8px;
+  height: 8px;
+  min-width: 8px;
+  padding: 0;
+  font-size: 0;  /* 숫자 텍스트 숨김, 점만 표시 */
 }

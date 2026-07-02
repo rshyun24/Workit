@@ -221,12 +221,16 @@ def home_view(request):
     in_progress = contracts.filter(status='in_progress').count()
     completed = contracts.filter(status='completed').count()
 
+    # "계약 검토 목록"은 계약관리 화면(검토중 상태만 표시)과 동일한 범위를 보여줘야 한다.
+    # 이행으로 넘어간 계약(in_progress/completed)이 섞여 보이면 안 되므로 reviewing만 필터링.
+    recent_contracts = contracts.filter(status='reviewing')[:5]
+
     context = {
         'total': total,
         'in_review': in_review,
         'in_progress': in_progress,
         'completed': completed,
-        'recent_contracts': contracts[:5],
+        'recent_contracts': recent_contracts,
         'recent_performances': performances[:5],
     }
     return render(request, 'home.html', context)

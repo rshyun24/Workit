@@ -57,7 +57,7 @@
             {% endif %}
           </div>
           <div class="perf-progress-bar">
-            <div class="perf-progress-fill" style="width: {% widthratio perf.progress_count 4 100 %}%"></div>
+            <div class="perf-progress-fill" style="width: {% widthratio perf.progress_count 3 100 %}%"></div>
           </div>
         <div class="perf-progress-label">
           <span>{{ perf.progress_count }}/3 완료</span>
@@ -285,8 +285,8 @@ let currentPerfId = null;
             
             // 💡 디자인 요구사항 반영: 일반 선은 3px 두께에 연하게, 마감일은 7px 두께에 선명하고 진하게 처리
             const barStyle = isTargetDay 
-              ? `background: ${barBg}; opacity: 1; height: 7px;` 
-              : `background: ${barBg}; opacity: 0.5; height: 3px;`;
+              ? `background: ${barBg}; opacity: 1; height: 6px;` 
+              : `background: ${barBg}; opacity: 0.5; height: 4px;`;
 
             const tooltipTitle = ev.project_name;
             const tooltipDesc = isTargetDay ? `${targetDue.type} 제출일` : `계약 기간`;
@@ -321,13 +321,13 @@ let currentPerfId = null;
   }
 
   function renderLegend() {
-      const leg = document.getElementById('calendarLegend');
-      if (leg) {
-        // 💡 하단 범례 디자인에 '완료(준공)' 다시 노출
-        leg.innerHTML = 
-            `<span class="legend-item"><span class="legend-line" style="background:#aaa; height:3px; width:16px; display:inline-block; border-radius:2px; margin-right:6px;"></span>완료(준공)</span>`
-          + `<span class="legend-item"><span class="legend-line" style="background:#4f46e5; opacity:0.5; height:3px; width:16px; display:inline-block; border-radius:2px; margin-right:6px;"></span>계약 기간</span>`;
-      }
+    const leg = document.getElementById('calendarLegend');
+    if (leg) {
+      leg.innerHTML = 
+          `<span class="legend-item"><span class="legend-line" style="background:#aaa; height:3px; width:16px; display:inline-block; border-radius:2px; margin-right:6px;"></span>완료(준공)</span>`
+        + `<span class="legend-item"><span class="legend-line" style="background:#4f46e5; opacity:0.5; height:3px; width:16px; display:inline-block; border-radius:2px; margin-right:6px;"></span>계약 기간</span>`
+        + `<span class="legend-item"><span class="legend-line" style="background:#4f46e5; opacity:1; height:5px; width:16px; display:inline-block; border-radius:2px; margin-right:6px;"></span>산출물 제출일</span>`;
+    }
   }
 
   function applyAccentColors() {
@@ -835,8 +835,7 @@ window.submitFileChange = function() {
   .then(r => r.json())
   .then(data => {
     if (data.status === 'ok') {
-      closeModal('modalFileChange');
-      openPerfDetail(currentPerfId);
+      location.reload();
     }
   });
 };
