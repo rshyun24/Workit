@@ -79,19 +79,17 @@
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">발주기관</label>
-          <input type="text" name="issuing_org" class="form-input" placeholder="예) OO광역시청">
+          <input type="text" name="issuing_org" class="form-input" placeholder="예) ◯◯광역시청">
         </div>
         <div class="form-group">
           <label class="form-label">사업 예산</label>
-          <input type="text" name="budget" class="form-input" placeholder="예) 4억 8,000만원">
+          <input type="text" name="budget" class="form-input" placeholder="예) 2억 8,000만원">
         </div>
       </div>
       <div class="form-group">
         <label class="form-label">계약 담당자</label>
-        <input type="text" name="contact_person" class="form-input" placeholder="예) 김도윤 주무관">
+        <input type="text" name="contact_person" class="form-input" placeholder="예) ◯◯◯ 주무관">
       </div>
-
-      <div class="form-section-divider">문서 첨부 <span class="optional-tag">선택</span></div>
 
       <div class="form-group">
         <label class="form-label">요구사항정의서 <span class="optional-tag">선택</span></label>
@@ -99,7 +97,7 @@
           <input type="file" id="file_req" name="requirements_doc" style="display:none" onchange="showFileName(this,'zone_req')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           <p class="upload-text">파일 선택 또는 끌어다 놓기</p>
-          <p class="upload-hint">PDF · HWP(최대 50MB)</p>
+          <p class="upload-hint">PDF · HWP(최대 20MB)</p>
         </div>
       </div>
 
@@ -109,7 +107,7 @@
           <input type="file" id="file_rfp" name="rfp_doc" style="display:none" onchange="showFileName(this,'zone_rfp')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           <p class="upload-text">파일 선택 또는 끌어다 놓기</p>
-          <p class="upload-hint">PDF · HWP(최대 50MB)</p>
+          <p class="upload-hint">PDF · HWP(최대 20MB)</p>
         </div>
       </div>
 
@@ -119,7 +117,7 @@
           <input type="file" id="file_contract" name="contract_doc" style="display:none" onchange="showFileName(this,'zone_contract')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="28" height="28"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           <p class="upload-text">파일 선택 또는 끌어다 놓기</p>
-          <p class="upload-hint">PDF · HWP(최대 50MB)</p>
+          <p class="upload-hint">PDF · HWP(최대 20MB)</p>
         </div>
       </div>
 
@@ -172,7 +170,7 @@
       <button class="btn btn-ghost" onclick="closeModal('modalContractDetail')">닫기</button>
       <button class="btn btn-primary" id="btnAIStart" onclick="startAIReview()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-        AI 분석 시작
+        계약서 AI 분석 시작
       </button>
     </div>
     <!-- <div class="modal-footer" id="detailFooterEdit" style="display:none;">

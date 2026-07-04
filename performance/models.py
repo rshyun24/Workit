@@ -85,3 +85,80 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"[{self.user}] {self.message}"
+
+class ExecutionPlanParsedData(models.Model):
+    """
+    과업수행계획서(Deliverable) 파싱한 정형화 데이터.
+ 
+    - 파싱 시점: 과업수행계획서 파일 업로드 직후 비동기
+    - parse_status 흐름: pending → processing → done | failed
+    """
+ 
+    deliverable = models.OneToOneField(
+        'Deliverable',
+        on_delete=models.CASCADE,
+        related_name='parsed_data',
+        # deliverable_type == 'execution_plan' 인 레코드에 연결됨
+    )
+    # PEP 코드 체계(PEP-01 ~ PEP-16) 기반 정형화 JSON
+    parsed_json = models.JSONField(default=dict, blank=True)
+ 
+    parse_status = models.CharField(
+        max_length=20,
+        choices=[
+            ('pending',    '대기'),
+            ('processing', '처리중'),
+            ('done',       '완료'),
+            ('failed',     '실패'),
+        ],
+        default='pending',
+    )
+    parsed_at = models.DateTimeField(null=True, blank=True)
+    error_message = models.TextField(blank=True)
+ 
+    class Meta:
+        verbose_name = '과업수행계획서 파싱 결과'
+        verbose_name_plural = '과업수행계획서 파싱 결과 목록'
+ 
+    def __str__(self):
+        return f'PEP 파싱 — {self.deliverable} [{self.parse_status}]'
+ 
+ 
+class RFPComparisonResult(models.Model):
+    """
+    RFP ↔ 과업수행계획서 AI 비교 분석 결과.
+ 
+    - 비교 시점: 프론트의 "비교 분석" 버튼 클릭
+    - 새 비교를 실행할 때마다 이전 결과는 삭제하고 최신 1건만 유지
+    """
+ 
+    performance = models.ForeignKey(
+        'Performance',
+        on_delete=models.CASCADE,
+        related_name='rfp_comparisons',
+    )
+    rfp_parsed = models.ForeignKey(
+        # contracts 앱 모델 참조 — 앱이 분리돼 있으면 문자열로 지정
+        'contracts.RFPParsedData',
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='+',
+    )
+    execution_plan_parsed = models.ForeignKey(
+        ExecutionPlanParsedData,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='+',
+    )
+    # 비교 분석 JSON
+    # {"overall_score": 85, "summary": "...", "satisfied": [...], "partial": [...], "unsatisfied": [...]}
+    comparison_json = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+ 
+    class Meta:
+        verbose_name = 'RFP 비교 결과'
+        verbose_name_plural = 'RFP 비교 결과 목록'
+        ordering = ['-created_at']
+ 
+    def __str__(self):
+        return f'비교 결과 — {self.performance} ({self.created_at:%Y-%m-%d})'
