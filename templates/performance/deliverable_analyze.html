@@ -30,6 +30,14 @@
 .issue-list li.warn { background:#fffbeb; color:#92670c; }
 .issue-list li.ok { background:#eff6ff; color:#1e40af; }
 .issue-list li .ic { flex-shrink:0; font-weight:700; }
+
+/* QA 검수 / RFP 비교 탭 */
+.qa-tabs { display:flex; border-bottom:1.5px solid #eee; margin-bottom:14px; }
+.qa-tab-btn { flex:1; background:none; border:none; padding:10px 4px; font-size:13px; font-weight:600; color:#999; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1.5px; }
+.qa-tab-btn.active { color:#4f46e5; border-bottom-color:#4f46e5; }
+.qa-tab-btn:disabled { color:#ccc; cursor:not-allowed; }
+.btn-reject { background:#fef2f2; border:1.5px solid #dc2626; color:#dc2626; }
+.btn-reject:hover { background:#fee2e2; }
 </style>
 <div class="analyze-layout">
   <!-- Left: Document viewer -->
@@ -65,23 +73,22 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
           <span id="reviewCountText">보완 0 건</span>
         </div>
-        <span style="margin-left:auto; font-size:11px; color:#999; white-space:nowrap;">평가기준: {% if deliverable.deliverable_type == 'tech_apply' %}기술적용결과표 체크 정합성{% else %}사업수행계획서 품질평가{% endif %}</span>
+        <span style="margin-left:auto; font-size:11px; color:#999; white-space:nowrap;">평가기준: {% if deliverable.deliverable_type == 'tech_apply' %}기술적용결과표 체크 정합성{% elif is_kickoff %}소제목 매핑 QA · RFP 대응 비교{% else %}사업수행계획서 품질평가{% endif %}</span>
       </div>
     </div>
 
     <div class="review-panel-body" id="reviewBody" style="overflow-y:auto;">
-      {% if analyzable %}
+      {% if is_kickoff %}
+        <!-- 소제목 매핑 QA 검수(1단계) / RFP 비교(2단계) — 탭으로 전환 -->
+        <div id="qaStep"></div>
+      {% elif analyzable %}
         <!-- Initial state -->
         <div class="ai-intro" id="aiIntro">
           <div class="ai-intro-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
           </div>
           <h3>AI 품질 분석</h3>
-          {% if deliverable.deliverable_type == 'tech_apply' %}
           <p><strong>{{ criteria_label }}</strong><br>각 항목의 적용/부분적용/미적용/해당없음 체크와<br>사유 작성 여부를 규칙 기반으로 검증합니다.</p>
-          {% else %}
-          <p>sLLM이 <strong>{{ criteria_label }}</strong>을 기준으로<br>목차 항목별 누락·일관성을 평가합니다.<br><span style="color:#999;font-size:12px;">법적 검토는 수행하지 않습니다.</span></p>
-          {% endif %}
           <button class="btn btn-primary" id="btnAnalyze" onclick="runAnalysis()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
             AI 분석 시작
@@ -132,9 +139,226 @@
 {% endblock %}
 
 {% block extra_js %}
+{{ qa_data|json_script:"qa-data" }}
+{{ comparison_data|json_script:"comparison-data" }}
 <script>
 const DEL_ID = {{ deliverable.id }};
+const IS_KICKOFF = {{ is_kickoff|yesno:"true,false" }};
+const QA_DATA = JSON.parse(document.getElementById('qa-data').textContent);
+let COMPARISON_DATA = JSON.parse(document.getElementById('comparison-data').textContent);
 let ANALYSIS = null;
+
+// ── 1단계: 소제목 매핑 QA 검수 (원본 ↔ 파싱 결과) ──────────────────────────
+
+const ISSUE_TYPE_LABEL = {
+  missing_section: '소제목 누락',
+  empty_section: '빈 소제목',
+  unrecognized_section: '미등록 소제목',
+  section_order_mismatch: '순서 불일치',
+  section_content_mismatch: '내용 불일치',
+  content_misplaced: '내용 오배치',
+  paragraph_misplaced: '문단 오배치',
+  paragraph_missing: '문단 누락',
+};
+
+function qaIntroHtml() {
+  return `
+    <div class="ai-intro" id="qaIntro">
+      <div class="ai-intro-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      </div>
+      <h3>사업수행계획서 분석</h3>
+      <p>원본 문서와 규칙 기반 파싱 결과를 대조해<br>소제목 매핑이 정확한지, 누락된 항목은 없는지<br>먼저 검수합니다.</p>
+      <button class="btn btn-primary" id="btnParseQa" onclick="runQaAnalysis()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        사업수행계획서 AI 분석 시작
+      </button>
+    </div>`;
+}
+
+let CURRENT_QA_REPORT = (QA_DATA && QA_DATA.qa_report) || null;
+let ACTIVE_QA_TAB = COMPARISON_DATA ? 2 : 1;
+let COMPARE_LOADING = false;
+
+function initQaStep() {
+  const step = document.getElementById('qaStep');
+  if (!step) return;
+
+  if (CURRENT_QA_REPORT) {
+    renderQaStep();
+  } else {
+    step.innerHTML = qaIntroHtml();
+  }
+}
+
+function runQaAnalysis() {
+  const btn = document.getElementById('btnParseQa');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> 분석 중...';
+  }
+  fetch(`/performance/deliverable/${DEL_ID}/parse-qa/`, {
+    method: 'POST',
+    headers: {'X-CSRFToken': getCsrf()},
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.status === 'ok') {
+      CURRENT_QA_REPORT = data.qa_report;
+      COMPARISON_DATA = null;
+      ACTIVE_QA_TAB = 1;
+      renderQaStep();
+    } else {
+      alert(data.message || '분석 중 오류가 발생했습니다.');
+      if (btn) { btn.disabled = false; btn.innerHTML = '사업수행계획서 AI 분석 시작'; }
+    }
+  })
+  .catch(() => {
+    alert('분석 요청에 실패했습니다.');
+    if (btn) { btn.disabled = false; btn.innerHTML = '사업수행계획서 AI 분석 시작'; }
+  });
+}
+
+function switchQaTab(n) {
+  if (n === 2 && !COMPARISON_DATA && !COMPARE_LOADING) return;  // 아직 비교 실행 전에는 못 들어감
+  ACTIVE_QA_TAB = n;
+  renderQaStep();
+}
+
+// CURRENT_QA_REPORT / COMPARISON_DATA / ACTIVE_QA_TAB 상태를 그대로 다시 그린다
+// (문자열 짜깁기 없이 항상 처음부터 재구성).
+function renderQaStep() {
+  const step = document.getElementById('qaStep');
+  if (!step || !CURRENT_QA_REPORT) return;
+
+  const hasComparison = !!COMPARISON_DATA;
+
+  let html = `<div class="qa-tabs">
+    <button class="qa-tab-btn ${ACTIVE_QA_TAB === 1 ? 'active' : ''}" onclick="switchQaTab(1)">1단계 · 소제목 매핑 QA</button>
+    <button class="qa-tab-btn ${ACTIVE_QA_TAB === 2 ? 'active' : ''}" onclick="switchQaTab(2)" ${hasComparison ? '' : 'disabled'}>2단계 · RFP 비교</button>
+  </div>`;
+
+  html += `<div id="qaTabPanel1" style="${ACTIVE_QA_TAB === 1 ? '' : 'display:none;'}">${renderQaTab1Html()}</div>`;
+  html += `<div id="qaTabPanel2" style="${ACTIVE_QA_TAB === 2 ? '' : 'display:none;'}">${renderQaTab2Html()}</div>`;
+
+  step.innerHTML = html;
+}
+
+function renderQaTab1Html() {
+  const report = CURRENT_QA_REPORT;
+  const statusClass = report.review_status === 'PASS' ? 'ok' : (report.review_status === 'WARN' ? 'warn' : 'bad');
+  const issues = report.issues || [];
+
+  let html = `<div class="qa-summary">
+    <div class="qa-stat ${statusClass}"><div class="num">${report.review_status}</div><div class="lbl">판정</div></div>
+    <div class="qa-stat"><div class="num">${report.matched_section_count}/${report.expected_section_count}</div><div class="lbl">소제목 매핑</div></div>
+    <div class="qa-stat ${issues.length ? 'warn' : 'ok'}"><div class="num">${issues.length}</div><div class="lbl">확인 필요</div></div>
+  </div>`;
+
+  if (issues.length) {
+    html += `<ul class="issue-list">`;
+    issues.forEach(issue => {
+      const lv = issue.severity === 'blocking' ? 'bad' : 'warn';
+      const ic = issue.severity === 'blocking' ? '✕' : '⚠';
+      const label = ISSUE_TYPE_LABEL[issue.issue_type] || issue.issue_type;
+      html += `<li class="${lv}"><span class="ic">${ic}</span><span><strong>[${label}]</strong> ${escapeHtml(issue.message)}</span></li>`;
+    });
+    html += `</ul>`;
+  } else {
+    html += `<p style="font-size:13px; color:#888; padding:10px 0;">발견된 이슈가 없습니다.</p>`;
+  }
+
+  if (!COMPARISON_DATA) {
+    html += `
+      <div style="display:flex; gap:8px; margin-top:14px;">
+        <button class="btn btn-reject" style="flex:1;" onclick="rejectQa()">반려 (다시 업로드)</button>
+        <button class="btn btn-primary" style="flex:1;" onclick="proceedToCompare()">그대로 진행</button>
+      </div>`;
+  }
+
+  return html;
+}
+
+function renderQaTab2Html() {
+  if (COMPARE_LOADING) {
+    return `<p style="font-size:13px; color:#888; padding:10px 0;"><span class="spinner"></span> RFP와 비교하는 중...</p>`;
+  }
+  if (COMPARISON_DATA) {
+    return renderComparisonHtml(COMPARISON_DATA);
+  }
+  return `<p style="font-size:13px; color:#888; padding:10px 0;">1단계에서 "그대로 진행"을 누르면 결과가 표시됩니다.</p>`;
+}
+
+function rejectQa() {
+  alert('산출물 목록에서 사업수행계획서 파일을 다시 업로드한 뒤 재분석해주세요.');
+  window.location.href = '{% url "performance_list" %}';
+}
+
+function proceedToCompare() {
+  COMPARE_LOADING = true;
+  ACTIVE_QA_TAB = 2;
+  renderQaStep();
+
+  fetch(`/performance/deliverable/${DEL_ID}/compare-rfp/`, {
+    method: 'POST',
+    headers: {'X-CSRFToken': getCsrf()},
+  })
+  .then(r => r.json())
+  .then(data => {
+    COMPARE_LOADING = false;
+    if (data.status === 'ok') {
+      COMPARISON_DATA = data.comparison;
+    } else {
+      alert(data.message || 'RFP 비교 중 오류가 발생했습니다.');
+      ACTIVE_QA_TAB = 1;
+    }
+    renderQaStep();
+  })
+  .catch(() => {
+    COMPARE_LOADING = false;
+    alert('RFP 비교 요청에 실패했습니다.');
+    ACTIVE_QA_TAB = 1;
+    renderQaStep();
+  });
+}
+
+function renderComparisonHtml(cmp) {
+  let html = `<div style="font-size:13px; font-weight:700; color:#333; margin-bottom:10px;">종합 ${cmp.overall_score}점</div>`;
+  html += `<div class="qa-summary">
+    <div class="qa-stat ok"><div class="num">${cmp.satisfied_count}</div><div class="lbl">충족</div></div>
+    <div class="qa-stat warn"><div class="num">${cmp.partial_count}</div><div class="lbl">부분충족</div></div>
+    <div class="qa-stat bad"><div class="num">${cmp.unsatisfied_count}</div><div class="lbl">미충족</div></div>
+  </div>`;
+
+  const rows = [
+    ...(cmp.unsatisfied || []).map(e => ({...e, lv: 'bad', note: e.issue})),
+    ...(cmp.partial || []).map(e => ({...e, lv: 'warn', note: e.gap})),
+  ];
+
+  if (rows.length) {
+    html += `<ul class="issue-list">`;
+    rows.forEach(e => {
+      const ic = e.lv === 'bad' ? '✕' : '⚠';
+      const missing = (e.pep_codes_missing || []).join(', ');
+      html += `<li class="${e.lv}">
+        <span class="ic">${ic}</span>
+        <span>
+          <strong>RFP '${escapeHtml(e.rfp_code)} ${escapeHtml(e.rfp_subtitle)}'</strong> 대응 확인
+          <span style="color:#999;">— 관련 분류: ${escapeHtml(e.description)}</span><br>
+          사업수행계획서에서 <strong>${missing}</strong> 항목이 비어 있습니다 (충족률 ${e.coverage}%)
+        </span>
+      </li>`;
+    });
+    html += `</ul>`;
+  } else {
+    html += `<p style="font-size:13px; color:#888; padding:10px 0;">RFP 대비 미흡한 항목이 발견되지 않았습니다.</p>`;
+  }
+  return html;
+}
+
+if (IS_KICKOFF) {
+  initQaStep();
+}
 
 function runAnalysis() {
   const btn = document.getElementById('btnAnalyze');

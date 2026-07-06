@@ -220,9 +220,19 @@ def deliverable_upload(request, perf_id):
         defaults=defaults,
     )
 
-    # 사업수행계획서(kickoff) 파일이 새로 업로드되면, 그 안의 산출물계획 표를
-    # 파싱해 기술적용결과표/사업추진결과보고서 마감일을 비동기로 자동 반영
+    # 사업수행계획서(kickoff) 파일이 새로 바뀌면, 예전 파일 기준으로 만들어진
+    # QA 검수 결과·RFP 비교 결과는 더 이상 유효하지 않으므로 폐기한다.
+    # (재분석 전까지는 deliverable_analyze 화면에서 "분석 시작" 단계부터 다시 노출됨)
     if d_type == 'kickoff' and f:
+        from .models import ExecutionPlanParsedData, RFPComparisonResult
+        ExecutionPlanParsedData.objects.filter(deliverable=d).update(
+            parsed_json={}, qa_report={}, parse_status='pending',
+            parsed_at=None, error_message='',
+        )
+        RFPComparisonResult.objects.filter(performance=perf).delete()
+
+        # 그 안의 산출물계획 표를 파싱해 기술적용결과표/사업추진결과보고서
+        # 마감일을 비동기로 자동 반영
         from .tasks import sync_deliverable_dates_from_kickoff_task
         sync_deliverable_dates_from_kickoff_task.delay(d.id)
 
@@ -286,11 +296,95 @@ def deliverable_analyze(request, del_id):
         performance__contract__created_by=request.user,
     )
     analyzable = DELIVERABLE_CRITERIA.get(d.deliverable_type) is not None
+    is_kickoff = d.deliverable_type == 'kickoff'
+
+    # 이미 실행된 QA 검수 / RFP 비교 결과가 있으면 새로고침해도 그대로 복원
+    qa_data = None
+    comparison_data = None
+    if is_kickoff:
+        parsed = getattr(d, 'parsed_data', None)
+        if parsed and parsed.parse_status in ('done', 'failed'):
+            qa_data = {
+                'parse_status': parsed.parse_status,
+                'qa_report': parsed.qa_report,
+                'error_message': parsed.error_message,
+            }
+        comparison = d.performance.rfp_comparisons.first()
+        if comparison:
+            comparison_data = comparison.comparison_json
+
     return render(request, 'performance/deliverable_analyze.html', {
         'deliverable': d,
         'contract': d.performance.contract,
         'analyzable': analyzable,
         'criteria_label': DELIVERABLE_CRITERIA.get(d.deliverable_type) or '',
+        'is_kickoff': is_kickoff,
+        'qa_data': qa_data,
+        'comparison_data': comparison_data,
+    })
+
+
+@login_required
+@require_POST
+def deliverable_parse_qa(request, del_id):
+    """
+    사업수행계획서(kickoff) 파일을 규칙 기반으로 파싱하고, LLM/qa_agent로
+    '원본 ↔ 파싱 결과'의 소제목 매핑을 검수한다.
+
+    호출 시점: 이행관리에서 "수행계획서 분석" 버튼 클릭.
+    """
+    d = get_object_or_404(
+        Deliverable, pk=del_id,
+        performance__contract__created_by=request.user,
+    )
+    if d.deliverable_type != 'kickoff':
+        return JsonResponse({'status': 'error', 'message': '사업수행계획서만 지원합니다.'}, status=400)
+    if not d.file:
+        return JsonResponse({'status': 'error', 'message': '파일이 없습니다.'}, status=400)
+
+    from .tasks import parse_execution_plan_task
+    parse_execution_plan_task.apply(args=(d.id,)).get()
+
+    parsed = d.parsed_data
+    parsed.refresh_from_db()
+    if parsed.parse_status == 'failed':
+        return JsonResponse({
+            'status': 'error',
+            'message': parsed.error_message or '파싱 중 오류가 발생했습니다.',
+        }, status=400)
+
+    return JsonResponse({
+        'status': 'ok',
+        'parse_status': parsed.parse_status,
+        'qa_report': parsed.qa_report,
+    })
+
+
+@login_required
+@require_POST
+def deliverable_compare_rfp(request, del_id):
+    """
+    파싱된 RFP와 사업수행계획서를 구조적으로 비교한다 (RFP ↔ 수행계획서 내용 일치 여부).
+
+    호출 시점: QA 검수 결과 확인 후 "그대로 진행" 버튼 클릭 (반려 없이 비교로 넘어갈 때).
+    """
+    d = get_object_or_404(
+        Deliverable, pk=del_id,
+        performance__contract__created_by=request.user,
+    )
+    if d.deliverable_type != 'kickoff':
+        return JsonResponse({'status': 'error', 'message': '사업수행계획서만 지원합니다.'}, status=400)
+
+    from .tasks import compare_rfp_execution_plan_task
+    result = compare_rfp_execution_plan_task.apply(args=(d.performance_id,)).get()
+
+    if result.get('status') != 'ok':
+        return JsonResponse(result, status=400)
+
+    comparison = d.performance.rfp_comparisons.first()
+    return JsonResponse({
+        'status': 'ok',
+        'comparison': comparison.comparison_json if comparison else {},
     })
 
 

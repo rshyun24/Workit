@@ -142,12 +142,22 @@ _CIRCLED_HEADING_PATTERN = re.compile(
     r'(?P<circled>[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮])[ \t]*(?P<circled_title>[^\n]*)'
 )
 
+# 요구사항 상세 항목(4.의 하위 11개 분류)을 원문자(①~⑪) 대신 "□ 제목 (SER)"처럼
+# 박스 기호 + 코드 접미사로 표기하는 RFP 서식도 있다. 이 경우 본문에는 그 표기가
+# 딱 한 번만 등장하고(목차에만 원문자가 나온다), 개별 요구사항의 세부내용도
+# 흔히 "□"로 시작하는 불릿을 쓰기 때문에 아무 "□" 줄이나 후보로 잡으면 안 되고,
+# 반드시 "(SER)"처럼 코드 접미사가 붙은 줄만 후보로 인정한다.
+_BOXED_CATEGORY_HEADING_PATTERN = re.compile(
+    r'(?m)^[ \t]*□[ \t]*(?P<boxed_title>[^\n(]*?)[ \t]*'
+    r'\((?:SER|SFR|PER|UIR|DAR|TSR|SCR|QAR|CTR|PMR|PSR)\)'
+)
+
 
 def _find_heading_candidates(text: str) -> list[tuple[int, str, str]]:
     """
     문서에서 "실제 제목처럼 보이는 줄"의 후보를 (위치, 종류, 제목텍스트) 형태로
-    모두 추출한다. 종류는 'roman'(챕터) / 'num'(중분류) / 'circled'(요구사항
-    상세 항목) 중 하나.
+    모두 추출한다. 종류는 'roman'(챕터) / 'num'(중분류) / 'circled'/'boxed'(요구사항
+    상세 항목, 표기 방식에 따라 둘 중 하나) 중 하나.
     """
     candidates: list[tuple[int, str, str]] = []
 
@@ -159,6 +169,9 @@ def _find_heading_candidates(text: str) -> list[tuple[int, str, str]]:
 
     for m in _CIRCLED_HEADING_PATTERN.finditer(text):
         candidates.append((m.start(), 'circled', m.group('circled_title').strip()))
+
+    for m in _BOXED_CATEGORY_HEADING_PATTERN.finditer(text):
+        candidates.append((m.start(), 'boxed', m.group('boxed_title').strip()))
 
     return candidates
 

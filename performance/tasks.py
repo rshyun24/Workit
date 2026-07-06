@@ -181,7 +181,7 @@ def compare_rfp_execution_plan_task(self, performance_id: int):
     if rfp_parsed.parse_status != 'done':
         return {'status': 'error', 'message': f'RFP 파싱 상태: {rfp_parsed.parse_status}'}
 
-    execution_plan = performance.deliverables.filter(deliverable_type='execution_plan').first()
+    execution_plan = performance.deliverables.filter(deliverable_type='kickoff').first()
     if not execution_plan:
         return {'status': 'error', 'message': '과업수행계획서 산출물이 없습니다.'}
 
