@@ -1,0 +1,3454 @@
+{
+  "config": {
+    "collection": "law_kb_ho",
+    "granularity": "항·호 단위",
+    "reranker": false,
+    "rrf_alpha": 0.3,
+    "top_k_list": [
+      1,
+      5,
+      10
+    ],
+    "embed_model": "BAAI/bge-m3",
+    "reranker1": null,
+    "reranker2": null
+  },
+  "metrics": {
+    "n": 116,
+    "MRR": 0.0,
+    "miss_count": 116,
+    "Recall@1": 0.0,
+    "HN_Hit@1": 0.9224,
+    "Recall@5": 0.0,
+    "HN_Hit@5": 1.0,
+    "Recall@10": 0.0,
+    "HN_Hit@10": 1.0,
+    "category_breakdown": {
+      "대금지급": {
+        "total": 15,
+        "Recall@5": 0.0,
+        "MRR": 0.0,
+        "HN_Hit@5": 1.0
+      },
+      "하자담보": {
+        "total": 10,
+        "Recall@5": 0.0,
+        "MRR": 0.0,
+        "HN_Hit@5": 1.0
+      },
+      "물가변동": {
+        "total": 16,
+        "Recall@5": 0.0,
+        "MRR": 0.0,
+        "HN_Hit@5": 1.0
+      },
+      "과업범위": {
+        "total": 3,
+        "Recall@5": 0.0,
+        "MRR": 0.0,
+        "HN_Hit@5": 1.0
+      },
+      "부당특약": {
+        "total": 14,
+        "Recall@5": 0.0,
+        "MRR": 0.0,
+        "HN_Hit@5": 1.0
+      },
+      "이행보증": {
+        "total": 16,
+        "Recall@5": 0.0,
+        "MRR": 0.0,
+        "HN_Hit@5": 1.0
+      },
+      "지식재산권": {
+        "total": 9,
+        "Recall@5": 0.0,
+        "MRR": 0.0,
+        "HN_Hit@5": 1.0
+      },
+      "지체상금": {
+        "total": 15,
+        "Recall@5": 0.0,
+        "MRR": 0.0,
+        "HN_Hit@5": 1.0
+      },
+      "하도급": {
+        "total": 8,
+        "Recall@5": 0.0,
+        "MRR": 0.0,
+        "HN_Hit@5": 1.0
+      },
+      "검사": {
+        "total": 6,
+        "Recall@5": 0.0,
+        "MRR": 0.0,
+        "HN_Hit@5": 1.0
+      },
+      "계약해제해지": {
+        "total": 4,
+        "Recall@5": 0.0,
+        "MRR": 0.0,
+        "HN_Hit@5": 1.0
+      }
+    }
+  },
+  "miss_items": [
+    {
+      "query_id": "Q001",
+      "category": "대금지급",
+      "ground_truth": [
+        "LCAE_67_1"
+      ]
+    },
+    {
+      "query_id": "Q002",
+      "category": "대금지급",
+      "ground_truth": [
+        "LCA_18_1"
+      ]
+    },
+    {
+      "query_id": "Q003",
+      "category": "하자담보",
+      "ground_truth": [
+        "LCAR_70_1_6"
+      ]
+    },
+    {
+      "query_id": "Q004",
+      "category": "물가변동",
+      "ground_truth": [
+        "LCAE_73_1_1"
+      ]
+    },
+    {
+      "query_id": "Q005",
+      "category": "과업범위",
+      "ground_truth": [
+        "LCAE_74_9"
+      ]
+    },
+    {
+      "query_id": "Q006",
+      "category": "부당특약",
+      "ground_truth": [
+        "LCA_6_3"
+      ]
+    },
+    {
+      "query_id": "Q007",
+      "category": "이행보증",
+      "ground_truth": [
+        "LCAE_53_1_1"
+      ]
+    },
+    {
+      "query_id": "Q008",
+      "category": "하자담보",
+      "ground_truth": [
+        "LCAR_70_1_6"
+      ]
+    },
+    {
+      "query_id": "Q009",
+      "category": "지식재산권",
+      "ground_truth": [
+        "SWPA_59_1"
+      ]
+    },
+    {
+      "query_id": "Q010",
+      "category": "부당특약",
+      "ground_truth": [
+        "LCA_6_3"
+      ]
+    },
+    {
+      "query_id": "Q011",
+      "category": "물가변동",
+      "ground_truth": [
+        "LCAE_73_1_1"
+      ]
+    },
+    {
+      "query_id": "Q012",
+      "category": "물가변동",
+      "ground_truth": [
+        "LCAE_74_1"
+      ]
+    },
+    {
+      "query_id": "Q013",
+      "category": "하자담보",
+      "ground_truth": [
+        "LCAR_70_1_6"
+      ]
+    },
+    {
+      "query_id": "Q014",
+      "category": "지체상금",
+      "ground_truth": [
+        "LCAR_75"
+      ]
+    },
+    {
+      "query_id": "Q015",
+      "category": "하도급",
+      "ground_truth": [
+        "SWPA_51_1"
+      ]
+    },
+    {
+      "query_id": "Q016",
+      "category": "하도급",
+      "ground_truth": [
+        "SWPA_51_5"
+      ]
+    },
+    {
+      "query_id": "Q017",
+      "category": "지식재산권",
+      "ground_truth": [
+        "SWPA_59_1"
+      ]
+    },
+    {
+      "query_id": "Q018",
+      "category": "물가변동",
+      "ground_truth": [
+        "LCAE_74_1"
+      ]
+    },
+    {
+      "query_id": "Q019",
+      "category": "지식재산권",
+      "ground_truth": [
+        "SWPA_59_1"
+      ]
+    },
+    {
+      "query_id": "Q020",
+      "category": "지체상금",
+      "ground_truth": [
+        "LCAR_75"
+      ]
+    },
+    {
+      "query_id": "Q021",
+      "category": "지체상금",
+      "ground_truth": [
+        "LCAE_90_1"
+      ]
+    },
+    {
+      "query_id": "Q022",
+      "category": "이행보증",
+      "ground_truth": [
+        "LCAE_51_5"
+      ]
+    },
+    {
+      "query_id": "Q023",
+      "category": "대금지급",
+      "ground_truth": [
+        "LCAE_67_3"
+      ]
+    },
+    {
+      "query_id": "Q024",
+      "category": "하도급",
+      "ground_truth": [
+        "SWPA_51_5"
+      ]
+    },
+    {
+      "query_id": "Q025",
+      "category": "이행보증",
+      "ground_truth": [
+        "LCAE_51_5"
+      ]
+    },
+    {
+      "query_id": "Q026",
+      "category": "지체상금",
+      "ground_truth": [
+        "LCAE_90_1"
+      ]
+    },
+    {
+      "query_id": "Q027",
+      "category": "하도급",
+      "ground_truth": [
+        "SWPA_51_1"
+      ]
+    },
+    {
+      "query_id": "Q028",
+      "category": "대금지급",
+      "ground_truth": [
+        "LCAE_67_3"
+      ]
+    },
+    {
+      "query_id": "Q029",
+      "category": "이행보증",
+      "ground_truth": [
+        "LCAE_51_5"
+      ]
+    },
+    {
+      "query_id": "Q030",
+      "category": "이행보증",
+      "ground_truth": [
+        "LCAE_54_3"
+      ]
+    },
+    {
+      "query_id": "Q031",
+      "category": "물가변동",
+      "ground_truth": [
+        "LCAE_74_1"
+      ]
+    },
+    {
+      "query_id": "Q032",
+      "category": "지식재산권",
+      "ground_truth": [
+        "PPMA_43_의10_2"
+      ]
+    },
+    {
+      "query_id": "Q033",
+      "category": "지체상금",
+      "ground_truth": [
+        "LCA_30_1"
+      ]
+    },
+    {
+      "query_id": "Q034",
+      "category": "대금지급",
+      "ground_truth": [
+        "LCAE_67_1"
+      ]
+    },
+    {
+      "query_id": "Q035",
+      "category": "물가변동",
+      "ground_truth": [
+        "LCAE_73_1_1"
+      ]
+    },
+    {
+      "query_id": "Q036",
+      "category": "부당특약",
+      "ground_truth": [
+        "PYG_9_10_2_나"
+      ]
+    },
+    {
+      "query_id": "Q037",
+      "category": "이행보증",
+      "ground_truth": [
+        "LCAE_54_1_1"
+      ]
+    },
+    {
+      "query_id": "Q038",
+      "category": "부당특약",
+      "ground_truth": [
+        "LCA_6_3"
+      ]
+    },
+    {
+      "query_id": "Q039",
+      "category": "대금지급",
+      "ground_truth": [
+        "LCAE_67_1"
+      ]
+    },
+    {
+      "query_id": "Q040",
+      "category": "대금지급",
+      "ground_truth": [
+        "LCAE_67_3"
+      ]
+    },
+    {
+      "query_id": "Q041",
+      "category": "지체상금",
+      "ground_truth": [
+        "LCAE_90_1"
+      ]
+    },
+    {
+      "query_id": "Q042",
+      "category": "부당특약",
+      "ground_truth": [
+        "LCA_6_3"
+      ]
+    },
+    {
+      "query_id": "Q043",
+      "category": "이행보증",
+      "ground_truth": [
+        "LCAE_54_1_1"
+      ]
+    },
+    {
+      "query_id": "Q044",
+      "category": "대금지급",
+      "ground_truth": [
+        "LCA_18_2"
+      ]
+    },
+    {
+      "query_id": "Q045",
+      "category": "검사",
+      "ground_truth": [
+        "LCAE_64_1"
+      ]
+    },
+    {
+      "query_id": "Q046",
+      "category": "부당특약",
+      "ground_truth": [
+        "LCA_6_3"
+      ]
+    },
+    {
+      "query_id": "Q047",
+      "category": "대금지급",
+      "ground_truth": [
+        "LCA_18_1"
+      ]
+    },
+    {
+      "query_id": "Q048",
+      "category": "검사",
+      "ground_truth": [
+        "LCAE_64_1"
+      ]
+    },
+    {
+      "query_id": "Q049",
+      "category": "하도급",
+      "ground_truth": [
+        "SWPA_51_1"
+      ]
+    },
+    {
+      "query_id": "Q050",
+      "category": "검사",
+      "ground_truth": [
+        "LCAE_64_1"
+      ]
+    },
+    {
+      "query_id": "Q051",
+      "category": "대금지급",
+      "ground_truth": [
+        "LCAE_67_1"
+      ]
+    },
+    {
+      "query_id": "Q052",
+      "category": "지체상금",
+      "ground_truth": [
+        "LCAE_90_1"
+      ]
+    },
+    {
+      "query_id": "Q053",
+      "category": "하도급",
+      "ground_truth": [
+        "SWPA_51_1"
+      ]
+    },
+    {
+      "query_id": "Q054",
+      "category": "하자담보",
+      "ground_truth": [
+        "LCAR_70_2_1"
+      ]
+    },
+    {
+      "query_id": "Q055",
+      "category": "부당특약",
+      "ground_truth": [
+        "LCA_6_3"
+      ]
+    },
+    {
+      "query_id": "Q056",
+      "category": "이행보증",
+      "ground_truth": [
+        "LCAE_53_1_1"
+      ]
+    },
+    {
+      "query_id": "Q057",
+      "category": "이행보증",
+      "ground_truth": [
+        "LCAE_51_5"
+      ]
+    },
+    {
+      "query_id": "Q058",
+      "category": "이행보증",
+      "ground_truth": [
+        "LCAE_51_5"
+      ]
+    },
+    {
+      "query_id": "Q059",
+      "category": "부당특약",
+      "ground_truth": [
+        "PYG_9_10_2_나"
+      ]
+    },
+    {
+      "query_id": "Q060",
+      "category": "대금지급",
+      "ground_truth": [
+        "LCA_18_2"
+      ]
+    },
+    {
+      "query_id": "Q061",
+      "category": "물가변동",
+      "ground_truth": [
+        "LCAE_73_1_1"
+      ]
+    },
+    {
+      "query_id": "Q062",
+      "category": "지체상금",
+      "ground_truth": [
+        "LCAE_90_1"
+      ]
+    },
+    {
+      "query_id": "Q063",
+      "category": "지체상금",
+      "ground_truth": [
+        "LCAE_90_1"
+      ]
+    },
+    {
+      "query_id": "Q064",
+      "category": "지체상금",
+      "ground_truth": [
+        "LCA_30_1"
+      ]
+    },
+    {
+      "query_id": "Q065",
+      "category": "물가변동",
+      "ground_truth": [
+        "LCAE_73_1_1"
+      ]
+    },
+    {
+      "query_id": "Q066",
+      "category": "계약해제해지",
+      "ground_truth": [
+        "LCA_15_3"
+      ]
+    },
+    {
+      "query_id": "Q067",
+      "category": "지식재산권",
+      "ground_truth": [
+        "PPMA_43_의10_2"
+      ]
+    },
+    {
+      "query_id": "Q068",
+      "category": "하자담보",
+      "ground_truth": [
+        "LCAR_70_1_6"
+      ]
+    },
+    {
+      "query_id": "Q069",
+      "category": "대금지급",
+      "ground_truth": [
+        "LCAE_67_1"
+      ]
+    },
+    {
+      "query_id": "Q070",
+      "category": "이행보증",
+      "ground_truth": [
+        "LCAE_51_5"
+      ]
+    },
+    {
+      "query_id": "Q071",
+      "category": "이행보증",
+      "ground_truth": [
+        "LCAE_51_5"
+      ]
+    },
+    {
+      "query_id": "Q072",
+      "category": "지체상금",
+      "ground_truth": [
+        "LCAR_75"
+      ]
+    },
+    {
+      "query_id": "Q073",
+      "category": "부당특약",
+      "ground_truth": [
+        "LCA_6_3"
+      ]
+    },
+    {
+      "query_id": "Q074",
+      "category": "물가변동",
+      "ground_truth": [
+        "LCAE_73_1_1"
+      ]
+    },
+    {
+      "query_id": "Q075",
+      "category": "검사",
+      "ground_truth": [
+        "LCAE_64_1"
+      ]
+    },
+    {
+      "query_id": "Q076",
+      "category": "지체상금",
+      "ground_truth": [
+        "LCAR_75"
+      ]
+    },
+    {
+      "query_id": "Q077",
+      "category": "이행보증",
+      "ground_truth": [
+        "LCAE_54_3"
+      ]
+    },
+    {
+      "query_id": "Q078",
+      "category": "물가변동",
+      "ground_truth": [
+        "LCAE_73_1_1"
+      ]
+    },
+    {
+      "query_id": "Q079",
+      "category": "물가변동",
+      "ground_truth": [
+        "LCAE_73_1_1"
+      ]
+    },
+    {
+      "query_id": "Q080",
+      "category": "부당특약",
+      "ground_truth": [
+        "LCA_6_3"
+      ]
+    },
+    {
+      "query_id": "Q081",
+      "category": "과업범위",
+      "ground_truth": [
+        "LCAE_74_9"
+      ]
+    },
+    {
+      "query_id": "Q082",
+      "category": "물가변동",
+      "ground_truth": [
+        "LCAE_73_1_1"
+      ]
+    },
+    {
+      "query_id": "Q083",
+      "category": "이행보증",
+      "ground_truth": [
+        "LCAE_54_3"
+      ]
+    },
+    {
+      "query_id": "Q084",
+      "category": "하자담보",
+      "ground_truth": [
+        "SWPA_60_1"
+      ]
+    },
+    {
+      "query_id": "Q085",
+      "category": "하도급",
+      "ground_truth": [
+        "SWPA_51_1"
+      ]
+    },
+    {
+      "query_id": "Q086",
+      "category": "계약해제해지",
+      "ground_truth": [
+        "LCA_30_의2_1_5"
+      ]
+    },
+    {
+      "query_id": "Q087",
+      "category": "대금지급",
+      "ground_truth": [
+        "LCAE_67_1"
+      ]
+    },
+    {
+      "query_id": "Q088",
+      "category": "지식재산권",
+      "ground_truth": [
+        "PPMA_43_의10_2"
+      ]
+    },
+    {
+      "query_id": "Q089",
+      "category": "지식재산권",
+      "ground_truth": [
+        "PPMA_43_의10_2"
+      ]
+    },
+    {
+      "query_id": "Q090",
+      "category": "대금지급",
+      "ground_truth": [
+        "LCAE_67_1"
+      ]
+    },
+    {
+      "query_id": "Q091",
+      "category": "하자담보",
+      "ground_truth": [
+        "LCAR_70_1_6"
+      ]
+    },
+    {
+      "query_id": "Q092",
+      "category": "지체상금",
+      "ground_truth": [
+        "LCAR_75"
+      ]
+    },
+    {
+      "query_id": "Q093",
+      "category": "검사",
+      "ground_truth": [
+        "LCAE_64_1"
+      ]
+    },
+    {
+      "query_id": "Q094",
+      "category": "부당특약",
+      "ground_truth": [
+        "LCA_6_3"
+      ]
+    },
+    {
+      "query_id": "Q095",
+      "category": "부당특약",
+      "ground_truth": [
+        "LCA_6_3"
+      ]
+    },
+    {
+      "query_id": "Q096",
+      "category": "하자담보",
+      "ground_truth": [
+        "LCAR_70_2_1"
+      ]
+    },
+    {
+      "query_id": "Q097",
+      "category": "하자담보",
+      "ground_truth": [
+        "SWPA_60_1"
+      ]
+    },
+    {
+      "query_id": "Q098",
+      "category": "하도급",
+      "ground_truth": [
+        "SWPA_51_1"
+      ]
+    },
+    {
+      "query_id": "Q099",
+      "category": "물가변동",
+      "ground_truth": [
+        "LCAE_74_1"
+      ]
+    },
+    {
+      "query_id": "Q100",
+      "category": "과업범위",
+      "ground_truth": [
+        "LCAE_74_9"
+      ]
+    },
+    {
+      "query_id": "Q101",
+      "category": "이행보증",
+      "ground_truth": [
+        "LCAE_54_1_1"
+      ]
+    },
+    {
+      "query_id": "Q102",
+      "category": "지체상금",
+      "ground_truth": [
+        "LCAR_75"
+      ]
+    },
+    {
+      "query_id": "Q103",
+      "category": "부당특약",
+      "ground_truth": [
+        "LCA_6_3"
+      ]
+    },
+    {
+      "query_id": "Q104",
+      "category": "검사",
+      "ground_truth": [
+        "LCAE_64_1"
+      ]
+    },
+    {
+      "query_id": "Q105",
+      "category": "하자담보",
+      "ground_truth": [
+        "LCAR_70_2_1"
+      ]
+    },
+    {
+      "query_id": "Q106",
+      "category": "계약해제해지",
+      "ground_truth": [
+        "LCA_15_3"
+      ]
+    },
+    {
+      "query_id": "Q107",
+      "category": "대금지급",
+      "ground_truth": [
+        "LCAE_67_1"
+      ]
+    },
+    {
+      "query_id": "Q108",
+      "category": "물가변동",
+      "ground_truth": [
+        "LCAE_73_1_1"
+      ]
+    },
+    {
+      "query_id": "Q109",
+      "category": "물가변동",
+      "ground_truth": [
+        "LCAE_73_1_1"
+      ]
+    },
+    {
+      "query_id": "Q110",
+      "category": "지체상금",
+      "ground_truth": [
+        "LCA_30_1"
+      ]
+    },
+    {
+      "query_id": "Q111",
+      "category": "지식재산권",
+      "ground_truth": [
+        "PPMA_43_의10_2"
+      ]
+    },
+    {
+      "query_id": "Q112",
+      "category": "물가변동",
+      "ground_truth": [
+        "LCAE_74_1"
+      ]
+    },
+    {
+      "query_id": "Q113",
+      "category": "지식재산권",
+      "ground_truth": [
+        "SWPA_59_1"
+      ]
+    },
+    {
+      "query_id": "Q114",
+      "category": "계약해제해지",
+      "ground_truth": [
+        "LCA_30_의2_1_5"
+      ]
+    },
+    {
+      "query_id": "Q115",
+      "category": "부당특약",
+      "ground_truth": [
+        "LCA_6_3"
+      ]
+    },
+    {
+      "query_id": "Q116",
+      "category": "이행보증",
+      "ground_truth": [
+        "LCAE_51_5"
+      ]
+    }
+  ],
+  "per_query": [
+    {
+      "query_id": "Q001",
+      "category": "대금지급",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "PYG_9_9_6_가",
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q002",
+      "category": "대금지급",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "PYG_9_9_6_가",
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q003",
+      "category": "하자담보",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q004",
+      "category": "물가변동",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        7
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_7_3_가",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5"
+      ]
+    },
+    {
+      "query_id": "Q005",
+      "category": "과업범위",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "PYG_9_7_2_가"
+      ]
+    },
+    {
+      "query_id": "Q006",
+      "category": "부당특약",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q007",
+      "category": "이행보증",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q008",
+      "category": "하자담보",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q009",
+      "category": "지식재산권",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q010",
+      "category": "부당특약",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q011",
+      "category": "물가변동",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3,
+        7
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_7_3_가",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5"
+      ]
+    },
+    {
+      "query_id": "Q012",
+      "category": "물가변동",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "PYG_9_7_3_가"
+      ]
+    },
+    {
+      "query_id": "Q013",
+      "category": "하자담보",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q014",
+      "category": "지체상금",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q015",
+      "category": "하도급",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q016",
+      "category": "하도급",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q017",
+      "category": "지식재산권",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q018",
+      "category": "물가변동",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "PYG_9_7_2_가",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5"
+      ]
+    },
+    {
+      "query_id": "Q019",
+      "category": "지식재산권",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q020",
+      "category": "지체상금",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q021",
+      "category": "지체상금",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "PYG_9_9_6_가",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q022",
+      "category": "이행보증",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q023",
+      "category": "대금지급",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "ranked_ids": [
+        "PYG_9_9_6_가",
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q024",
+      "category": "하도급",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q025",
+      "category": "이행보증",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q026",
+      "category": "지체상금",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3,
+        8
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_8_1_다",
+        "PYG_9_9_2_가",
+        "LCAE_5"
+      ]
+    },
+    {
+      "query_id": "Q027",
+      "category": "하도급",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q028",
+      "category": "대금지급",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "ranked_ids": [
+        "PYG_9_9_6_가",
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q029",
+      "category": "이행보증",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q030",
+      "category": "이행보증",
+      "gt_rank": null,
+      "hn_ranks": [
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "PYG_9_9_6_가",
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q031",
+      "category": "물가변동",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "PYG_9_7_3_가"
+      ]
+    },
+    {
+      "query_id": "Q032",
+      "category": "지식재산권",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q033",
+      "category": "지체상금",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q034",
+      "category": "대금지급",
+      "gt_rank": null,
+      "hn_ranks": [
+        2,
+        3,
+        4
+      ],
+      "ranked_ids": [
+        "PYG_9_9_6_가",
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q035",
+      "category": "물가변동",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3,
+        7
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_7_3_가",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5"
+      ]
+    },
+    {
+      "query_id": "Q036",
+      "category": "부당특약",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q037",
+      "category": "이행보증",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q038",
+      "category": "부당특약",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_6",
+        "LCAE_25_1_4",
+        "LCAE_25_1_7",
+        "LCAE_25_1_8",
+        "PYG_9_9_1_다",
+        "PYG_9_5_1_라",
+        "LCAE_43_1",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5"
+      ]
+    },
+    {
+      "query_id": "Q039",
+      "category": "대금지급",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "PYG_9_9_6_가",
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q040",
+      "category": "대금지급",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "ranked_ids": [
+        "PYG_9_9_6_가",
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q041",
+      "category": "지체상금",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "PYG_9_9_6_가",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q042",
+      "category": "부당특약",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q043",
+      "category": "이행보증",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q044",
+      "category": "대금지급",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_9_6_가",
+        "PYG_9_5_1_라",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q045",
+      "category": "검사",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "PYG_9_9_6_가",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q046",
+      "category": "부당특약",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q047",
+      "category": "대금지급",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "PYG_9_9_6_가",
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q048",
+      "category": "검사",
+      "gt_rank": null,
+      "hn_ranks": [
+        2,
+        3,
+        4,
+        10
+      ],
+      "ranked_ids": [
+        "PYG_9_9_6_가",
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "PYG_9_9_1_가"
+      ]
+    },
+    {
+      "query_id": "Q049",
+      "category": "하도급",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q050",
+      "category": "검사",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        4
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "PYG_9_9_6_가",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q051",
+      "category": "대금지급",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "PYG_9_9_6_가",
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q052",
+      "category": "지체상금",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3,
+        8
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_8_1_다",
+        "PYG_9_9_2_가",
+        "LCAE_5"
+      ]
+    },
+    {
+      "query_id": "Q053",
+      "category": "하도급",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q054",
+      "category": "하자담보",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q055",
+      "category": "부당특약",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q056",
+      "category": "이행보증",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q057",
+      "category": "이행보증",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q058",
+      "category": "이행보증",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q059",
+      "category": "부당특약",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q060",
+      "category": "대금지급",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_9_6_가",
+        "PYG_9_5_1_라",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q061",
+      "category": "물가변동",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3,
+        7
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_7_3_가",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5"
+      ]
+    },
+    {
+      "query_id": "Q062",
+      "category": "지체상금",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3,
+        8
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_8_1_다",
+        "PYG_9_9_2_가",
+        "LCAE_5"
+      ]
+    },
+    {
+      "query_id": "Q063",
+      "category": "지체상금",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "PYG_9_9_6_가",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q064",
+      "category": "지체상금",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q065",
+      "category": "물가변동",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        7
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_7_3_가",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5"
+      ]
+    },
+    {
+      "query_id": "Q066",
+      "category": "계약해제해지",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q067",
+      "category": "지식재산권",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q068",
+      "category": "하자담보",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q069",
+      "category": "대금지급",
+      "gt_rank": null,
+      "hn_ranks": [
+        2,
+        3,
+        4
+      ],
+      "ranked_ids": [
+        "PYG_9_9_6_가",
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q070",
+      "category": "이행보증",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q071",
+      "category": "이행보증",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q072",
+      "category": "지체상금",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q073",
+      "category": "부당특약",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q074",
+      "category": "물가변동",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3,
+        9
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "PYG_9_7_3_가",
+        "LCAE_5"
+      ]
+    },
+    {
+      "query_id": "Q075",
+      "category": "검사",
+      "gt_rank": null,
+      "hn_ranks": [
+        2,
+        3,
+        4,
+        10
+      ],
+      "ranked_ids": [
+        "PYG_9_9_6_가",
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "PYG_9_9_1_가"
+      ]
+    },
+    {
+      "query_id": "Q076",
+      "category": "지체상금",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q077",
+      "category": "이행보증",
+      "gt_rank": null,
+      "hn_ranks": [
+        2,
+        3,
+        4
+      ],
+      "ranked_ids": [
+        "PYG_9_9_6_가",
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q078",
+      "category": "물가변동",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3,
+        7
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_7_3_가",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5"
+      ]
+    },
+    {
+      "query_id": "Q079",
+      "category": "물가변동",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3,
+        8
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_7_2_가",
+        "PYG_9_7_3_가",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가"
+      ]
+    },
+    {
+      "query_id": "Q080",
+      "category": "부당특약",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q081",
+      "category": "과업범위",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "PYG_9_7_2_가"
+      ]
+    },
+    {
+      "query_id": "Q082",
+      "category": "물가변동",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        9
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "PYG_9_7_3_가",
+        "LCAE_5"
+      ]
+    },
+    {
+      "query_id": "Q083",
+      "category": "이행보증",
+      "gt_rank": null,
+      "hn_ranks": [
+        2,
+        3,
+        4
+      ],
+      "ranked_ids": [
+        "PYG_9_9_6_가",
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q084",
+      "category": "하자담보",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q085",
+      "category": "하도급",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q086",
+      "category": "계약해제해지",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "PYG_9_8_3_가",
+        "LCAE_5"
+      ]
+    },
+    {
+      "query_id": "Q087",
+      "category": "대금지급",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "PYG_9_9_6_가",
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q088",
+      "category": "지식재산권",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q089",
+      "category": "지식재산권",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q090",
+      "category": "대금지급",
+      "gt_rank": null,
+      "hn_ranks": [
+        2,
+        3,
+        4
+      ],
+      "ranked_ids": [
+        "PYG_9_9_6_가",
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q091",
+      "category": "하자담보",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q092",
+      "category": "지체상금",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q093",
+      "category": "검사",
+      "gt_rank": null,
+      "hn_ranks": [
+        2,
+        3,
+        4,
+        10
+      ],
+      "ranked_ids": [
+        "PYG_9_9_6_가",
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "PYG_9_9_1_가"
+      ]
+    },
+    {
+      "query_id": "Q094",
+      "category": "부당특약",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_6",
+        "LCAE_25_1_4",
+        "LCAE_25_1_7",
+        "LCAE_25_1_8",
+        "PYG_9_9_1_다",
+        "PYG_9_5_1_라",
+        "LCAE_43_1",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5"
+      ]
+    },
+    {
+      "query_id": "Q095",
+      "category": "부당특약",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q096",
+      "category": "하자담보",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q097",
+      "category": "하자담보",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q098",
+      "category": "하도급",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q099",
+      "category": "물가변동",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "PYG_9_7_2_가",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5"
+      ]
+    },
+    {
+      "query_id": "Q100",
+      "category": "과업범위",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "PYG_9_7_2_가"
+      ]
+    },
+    {
+      "query_id": "Q101",
+      "category": "이행보증",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q102",
+      "category": "지체상금",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q103",
+      "category": "부당특약",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_6",
+        "LCAE_25_1_4",
+        "LCAE_25_1_7",
+        "LCAE_25_1_8",
+        "PYG_9_9_1_다",
+        "PYG_9_5_1_라",
+        "LCAE_43_1",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5"
+      ]
+    },
+    {
+      "query_id": "Q104",
+      "category": "검사",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        3,
+        9
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "LCAE_25_1_8",
+        "PYG_9_9_6_가",
+        "PYG_9_5_1_라",
+        "PYG_9_9_2_가",
+        "PYG_9_8_1_다",
+        "LCAE_5"
+      ]
+    },
+    {
+      "query_id": "Q105",
+      "category": "하자담보",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q106",
+      "category": "계약해제해지",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q107",
+      "category": "대금지급",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "PYG_9_9_6_가",
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q108",
+      "category": "물가변동",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        9
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "PYG_9_7_3_가",
+        "LCAE_5"
+      ]
+    },
+    {
+      "query_id": "Q109",
+      "category": "물가변동",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        8
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_7_2_가",
+        "PYG_9_7_3_가",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가"
+      ]
+    },
+    {
+      "query_id": "Q110",
+      "category": "지체상금",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q111",
+      "category": "지식재산권",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q112",
+      "category": "물가변동",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "PYG_9_7_3_가"
+      ]
+    },
+    {
+      "query_id": "Q113",
+      "category": "지식재산권",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q114",
+      "category": "계약해제해지",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "PYG_9_8_3_가",
+        "LCAE_5"
+      ]
+    },
+    {
+      "query_id": "Q115",
+      "category": "부당특약",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    },
+    {
+      "query_id": "Q116",
+      "category": "이행보증",
+      "gt_rank": null,
+      "hn_ranks": [
+        1,
+        2,
+        3
+      ],
+      "ranked_ids": [
+        "LCAE_25_1_4",
+        "LCAE_25_1_6",
+        "LCAE_25_1_7",
+        "PYG_9_9_1_다",
+        "LCAE_25_1_8",
+        "PYG_9_5_1_라",
+        "PYG_9_9_6_가",
+        "PYG_9_9_2_가",
+        "LCAE_5",
+        "LCAE_43_1"
+      ]
+    }
+  ]
+}

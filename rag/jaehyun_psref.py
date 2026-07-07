@@ -28,8 +28,12 @@ from docx import Document
 # ─────────────────────────────────────────
 # 경로 설정
 # ─────────────────────────────────────────
-LAW_DIR    = Path("C:/lecture/Workit/data/law")
-OUTPUT_DIR = Path("C:/lecture/Workit/data/structured")
+# LAW_DIR    = Path("C:/lecture/Workit/data/law")
+# OUTPUT_DIR = Path("C:/lecture/Workit/data/structured")
+
+LAW_DIR    = Path("C:/project/Workit/data/law")
+OUTPUT_DIR = Path("C:/project/Workit/data/structured")
+
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # ─────────────────────────────────────────

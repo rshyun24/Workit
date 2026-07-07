@@ -1,0 +1,1278 @@
+[
+  {
+    "query_id": "Q001",
+    "category": "대금지급",
+    "clause_text": "발주기관은 계약상대자로부터 대가 지급 청구를 받은 날부터 5일 이내에 검사 내용에 따라 확정된 대가를 지급한다.",
+    "ground_truth": [
+      "LCAE_67_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제67조제1항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q002",
+    "category": "대금지급",
+    "clause_text": "발주기관은 검사 완료 전이라도 계약상대자의 요청이 있으면 대가의 전액을 미리 지급할 수 있다.",
+    "ground_truth": [
+      "LCA_18_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 제18조제1항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q003",
+    "category": "하자담보",
+    "clause_text": "하자보수보증금은 계약금액의 100분의 1로 하며, 하자담보책임기간은 검수일부터 6개월로 단축한다.",
+    "ground_truth": [
+      "LCAR_70_1_6"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행규칙 제70조제1항제6호",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q004",
+    "category": "물가변동",
+    "clause_text": "본 계약은 계약 기간 중 물가변동을 이유로 한 계약금액 조정을 일절 청구하지 아니하기로 한다.",
+    "ground_truth": [
+      "LCAE_73_1_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제73조제1항제1호",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q005",
+    "category": "과업범위",
+    "clause_text": "과업내용이 변경되더라도 계약금액은 일절 조정하지 아니한다.",
+    "ground_truth": [
+      "LCAE_74_9"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제74조제9항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q006",
+    "category": "부당특약",
+    "clause_text": "발주기관은 사업 수행 중 필요하다고 인정하는 경우 계약상대자에게 추가 비용 지급 없이 과업 범위를 확대할 수 있다.",
+    "ground_truth": [
+      "LCA_6_3"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 제6조제3항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q007",
+    "category": "이행보증",
+    "clause_text": "발주기관은 계약상대자와의 신뢰관계를 고려하여 별도 사유 없이 계약보증금 납부를 면제할 수 있다.",
+    "ground_truth": [
+      "LCAE_53_1_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제53조제1항제1호",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q008",
+    "category": "하자담보",
+    "clause_text": "계약상대자는 하자보수보증금으로 계약금액의 100분의 5에 해당하는 금액을 납부하여야 한다.",
+    "ground_truth": [
+      "LCAR_70_1_6"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행규칙 제70조제1항제6호",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q009",
+    "category": "지식재산권",
+    "clause_text": "계약상대자는 발주기관의 산출물 반출 요청을 정당한 사유 없이 제한할 수 있다.",
+    "ground_truth": [
+      "SWPA_59_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "소프트웨어 진흥법 제59조제1항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q010",
+    "category": "부당특약",
+    "clause_text": "계약상대자는 계약 이행 과정에서 발생한 모든 손해에 대하여 귀책사유 유무와 관계없이 무한책임을 부담한다.",
+    "ground_truth": [
+      "LCA_6_3"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 제6조제3항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q011",
+    "category": "물가변동",
+    "clause_text": "물가변동 조정 시 품목조정률을 초과하여 계약상대자가 제시하는 금액으로 증액한다.",
+    "ground_truth": [
+      "LCAE_73_1_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제73조제1항제1호",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q012",
+    "category": "물가변동",
+    "clause_text": "설계변경 또는 과업내용 변경으로 계약금액 조정 사유가 발생한 경우 그에 상응하여 계약금액을 조정한다.",
+    "ground_truth": [
+      "LCAE_74_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제74조제1항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q013",
+    "category": "하자담보",
+    "clause_text": "계약상대자는 하자보수보증금으로 계약금액의 100분의 5에 해당하는 금액을 납부하여야 한다.",
+    "ground_truth": [
+      "LCAR_70_1_6"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행규칙 제70조제1항제6호",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q014",
+    "category": "지체상금",
+    "clause_text": "지연배상금은 계약금액의 1000분의 1.3을 적용하되, 지체일수 산정 시작일을 계약서에 명시한 준공기한 다음 날로 한다.",
+    "ground_truth": [
+      "LCAR_75"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행규칙 제75조",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q015",
+    "category": "하도급",
+    "clause_text": "계약상대자는 사업금액의 100분의 50을 초과하여 하도급할 수 없으며, 하도급 전 발주기관의 승인을 받는다.",
+    "ground_truth": [
+      "SWPA_51_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "소프트웨어 진흥법 제51조제1항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q016",
+    "category": "하도급",
+    "clause_text": "계약상대자는 발주기관의 사전 승인 없이 하도급을 줄 수 있다.",
+    "ground_truth": [
+      "SWPA_51_5"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "소프트웨어 진흥법 제51조제5항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q017",
+    "category": "지식재산권",
+    "clause_text": "발주기관이 산출물의 반출을 요청하는 경우 국가안보 등 정당한 사유가 없으면 계약상대자는 이를 승인한다.",
+    "ground_truth": [
+      "SWPA_59_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "소프트웨어 진흥법 제59조제1항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q018",
+    "category": "물가변동",
+    "clause_text": "발주기관은 설계변경이나 과업 증가가 없더라도 계약상대자의 요청에 따라 계약금액을 증액할 수 있다.",
+    "ground_truth": [
+      "LCAE_74_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제74조제1항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q019",
+    "category": "지식재산권",
+    "clause_text": "발주기관이 산출물의 반출을 요청하는 경우 국가안보 등 정당한 사유가 없으면 계약상대자는 이를 승인한다.",
+    "ground_truth": [
+      "SWPA_59_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "소프트웨어 진흥법 제59조제1항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q020",
+    "category": "지체상금",
+    "clause_text": "지연배상금은 계약금액의 1000분의 1.3을 적용하되, 지체일수 산정 시작일을 계약서에 명시한 준공기한 다음 날로 한다.",
+    "ground_truth": [
+      "LCAR_75"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행규칙 제75조",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q021",
+    "category": "지체상금",
+    "clause_text": "계약상대자의 책임 여부와 무관하게 납품기한을 경과한 모든 일수를 지체일수에 산입하여 지연배상금을 부과한다.",
+    "ground_truth": [
+      "LCAE_90_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제90조제1항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q022",
+    "category": "이행보증",
+    "clause_text": "계약상대자는 계약상 의무이행 보증을 위하여 계약금액의 100분의 20에 해당하는 계약보증금을 납부하여야 한다.",
+    "ground_truth": [
+      "LCAE_51_5"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제51조제5항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q023",
+    "category": "대금지급",
+    "clause_text": "기성부분에 대한 대가는 계약수량과 이행전망을 고려하여 적어도 30일마다 지급한다.",
+    "ground_truth": [
+      "LCAE_67_3"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제67조제3항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q024",
+    "category": "하도급",
+    "clause_text": "계약상대자는 발주기관의 사전 승인 없이 하도급을 줄 수 있다.",
+    "ground_truth": [
+      "SWPA_51_5"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "소프트웨어 진흥법 제51조제5항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q025",
+    "category": "이행보증",
+    "clause_text": "계약보증금은 현금 또는 보증서로 납부할 수 있으며, 보증서의 보증기간은 계약이행기간에 30일을 가산한 기간 이상으로 한다.",
+    "ground_truth": [
+      "LCAE_51_5"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제51조제5항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q026",
+    "category": "지체상금",
+    "clause_text": "천재지변 등 계약상대자의 책임 없는 사유로 이행이 지체된 경우 해당 일수는 지체일수에서 제외하며, 그 입증책임은 계약상대자에게 있다.",
+    "ground_truth": [
+      "LCAE_90_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제90조제1항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q027",
+    "category": "하도급",
+    "clause_text": "계약상대자는 사업금액의 100분의 50을 초과하여 하도급할 수 없으며, 하도급 전 발주기관의 승인을 받는다.",
+    "ground_truth": [
+      "SWPA_51_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "소프트웨어 진흥법 제51조제1항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q028",
+    "category": "대금지급",
+    "clause_text": "기성부분에 대한 대가는 계약수량과 이행전망을 고려하여 적어도 30일마다 지급한다.",
+    "ground_truth": [
+      "LCAE_67_3"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제67조제3항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q029",
+    "category": "이행보증",
+    "clause_text": "계약상대자는 계약상 의무이행을 보증하기 위하여 계약보증금으로 계약금액의 100분의 10에 해당하는 금액을 납부한다.",
+    "ground_truth": [
+      "LCAE_51_5"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제51조제5항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q030",
+    "category": "이행보증",
+    "clause_text": "계약상대자가 계약을 이행하지 못한 경우, 이미 검사를 마친 기성부분에 해당하는 대가 전액을 계약보증금과 함께 발주기관에 귀속한다.",
+    "ground_truth": [
+      "LCAE_54_3"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제54조제3항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q031",
+    "category": "물가변동",
+    "clause_text": "설계변경 또는 과업내용 변경으로 계약금액 조정 사유가 발생한 경우 그에 상응하여 계약금액을 조정한다.",
+    "ground_truth": [
+      "LCAE_74_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제74조제1항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q032",
+    "category": "지식재산권",
+    "clause_text": "소프트웨어 산출물의 저작권은 발주기관과 계약상대자가 공동으로 소유하며, 발주기관의 활용을 보장한다.",
+    "ground_truth": [
+      "PPMA_43_의10_2"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "공유재산법 제43조의10제2항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q033",
+    "category": "지체상금",
+    "clause_text": "발주기관은 계약상대자의 사업 협조도 등을 고려하여 정당한 사유 없이도 지연배상금을 감면할 수 있다.",
+    "ground_truth": [
+      "LCA_30_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 제30조제1항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q034",
+    "category": "대금지급",
+    "clause_text": "발주기관과 계약상대자가 합의하는 경우 대가의 지급기한을 5일을 초과하지 않는 범위에서 연장할 수 있다.",
+    "ground_truth": [
+      "LCAE_67_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제67조제1항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q035",
+    "category": "물가변동",
+    "clause_text": "본 계약은 계약 기간 중 물가변동을 이유로 한 계약금액 조정을 일절 청구하지 아니하기로 한다.",
+    "ground_truth": [
+      "LCAE_73_1_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제73조제1항제1호",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q036",
+    "category": "부당특약",
+    "clause_text": "계약상대자는 계약 이행과 관련하여 취득한 발주기관의 자료를 계약 목적 외로 사용하거나 제3자에게 누설하여서는 아니 된다.",
+    "ground_truth": [
+      "PYG_9_10_2_나"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방자치단체 용역계약 일반조건 제9장_제10절_제2항_나",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q037",
+    "category": "이행보증",
+    "clause_text": "계약상대자가 계약상 의무를 이행하지 아니한 경우 계약보증금은 발주기관에 귀속되며, 귀속 절차는 발주기관이 정한 기준에 따른다.",
+    "ground_truth": [
+      "LCAE_54_1_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제54조제1항제1호",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q038",
+    "category": "부당특약",
+    "clause_text": "본 계약에 정하지 아니한 사항은 지방계약법령 및 관련 예규에 따르며, 법령에 위반되는 특약은 그 효력을 인정하지 아니한다.",
+    "ground_truth": [
+      "LCA_6_3"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 제6조제3항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q039",
+    "category": "대금지급",
+    "clause_text": "발주기관은 대가 지급 청구를 받은 날부터 30일 이내에 대가를 지급한다.",
+    "ground_truth": [
+      "LCAE_67_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제67조제1항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q040",
+    "category": "대금지급",
+    "clause_text": "기성부분에 대한 대가는 계약수량과 이행전망을 고려하여 적어도 30일마다 지급한다.",
+    "ground_truth": [
+      "LCAE_67_3"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제67조제3항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q041",
+    "category": "지체상금",
+    "clause_text": "계약상대자의 책임 여부와 무관하게 납품기한을 경과한 모든 일수를 지체일수에 산입하여 지연배상금을 부과한다.",
+    "ground_truth": [
+      "LCAE_90_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제90조제1항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q042",
+    "category": "부당특약",
+    "clause_text": "계약상대자는 계약 이행 과정에서 발생한 모든 손해에 대하여 귀책사유 유무와 관계없이 무한책임을 부담한다.",
+    "ground_truth": [
+      "LCA_6_3"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 제6조제3항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q043",
+    "category": "이행보증",
+    "clause_text": "계약상대자가 계약상 의무를 이행하지 아니한 경우 계약보증금은 발주기관에 귀속되며, 귀속 절차는 발주기관이 정한 기준에 따른다.",
+    "ground_truth": [
+      "LCAE_54_1_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제54조제1항제1호",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q044",
+    "category": "대금지급",
+    "clause_text": "발주기관이 대가 지급기한을 경과하여 대금을 지급하더라도 지연이자는 지급하지 아니한다.",
+    "ground_truth": [
+      "LCA_18_2"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 제18조제2항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q045",
+    "category": "검사",
+    "clause_text": "검사 결과 계약 이행 내용이 미흡한 경우 발주기관은 기간을 정하여 보완을 요구할 수 있으며, 보완에 소요된 기간은 검사기간에 산입하지 아니한다.",
+    "ground_truth": [
+      "LCAE_64_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제64조제1항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q046",
+    "category": "부당특약",
+    "clause_text": "계약상대자는 발주기관의 요구가 있을 경우 계약서에 명시되지 않은 업무라도 무상으로 수행하여야 한다.",
+    "ground_truth": [
+      "LCA_6_3"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 제6조제3항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q047",
+    "category": "대금지급",
+    "clause_text": "발주기관은 검사 완료 전이라도 계약상대자의 요청이 있으면 대가의 전액을 미리 지급할 수 있다.",
+    "ground_truth": [
+      "LCA_18_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 제18조제1항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q048",
+    "category": "검사",
+    "clause_text": "발주기관은 계약상대자로부터 이행 완료 통지를 받은 날부터 14일 이내에 계약 이행 내용의 전부 또는 일부에 대하여 검사를 한다.",
+    "ground_truth": [
+      "LCAE_64_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제64조제1항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q049",
+    "category": "하도급",
+    "clause_text": "계약상대자는 사업금액의 100분의 50을 초과하여 하도급할 수 없으며, 하도급 전 발주기관의 승인을 받는다.",
+    "ground_truth": [
+      "SWPA_51_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "소프트웨어 진흥법 제51조제1항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q050",
+    "category": "검사",
+    "clause_text": "검사 결과 계약 이행 내용이 미흡한 경우 발주기관은 기간을 정하여 보완을 요구할 수 있으며, 보완에 소요된 기간은 검사기간에 산입하지 아니한다.",
+    "ground_truth": [
+      "LCAE_64_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제64조제1항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q051",
+    "category": "대금지급",
+    "clause_text": "발주기관은 대가 지급 청구를 받은 날부터 30일 이내에 대가를 지급한다.",
+    "ground_truth": [
+      "LCAE_67_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제67조제1항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q052",
+    "category": "지체상금",
+    "clause_text": "천재지변 등 계약상대자의 책임 없는 사유로 이행이 지체된 경우 해당 일수는 지체일수에서 제외하며, 그 입증책임은 계약상대자에게 있다.",
+    "ground_truth": [
+      "LCAE_90_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제90조제1항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q053",
+    "category": "하도급",
+    "clause_text": "계약상대자는 필요 시 사업금액의 100분의 70까지 하도급할 수 있다.",
+    "ground_truth": [
+      "SWPA_51_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "소프트웨어 진흥법 제51조제1항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q054",
+    "category": "하자담보",
+    "clause_text": "본 용역계약은 하자보수보증금 납부를 면제하며, 별도의 하자담보책임을 부담하지 아니한다.",
+    "ground_truth": [
+      "LCAR_70_2_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행규칙 제70조제2항제1호",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q055",
+    "category": "부당특약",
+    "clause_text": "계약 이행 중 분쟁이 발생한 경우 발주기관 소재지를 관할하는 법원을 제1심 관할 법원으로 한다.",
+    "ground_truth": [
+      "LCA_6_3"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 제6조제3항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q056",
+    "category": "이행보증",
+    "clause_text": "발주기관은 계약상대자와의 신뢰관계를 고려하여 별도 사유 없이 계약보증금 납부를 면제할 수 있다.",
+    "ground_truth": [
+      "LCAE_53_1_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제53조제1항제1호",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q057",
+    "category": "이행보증",
+    "clause_text": "계약상대자는 계약상 의무이행을 보증하기 위하여 계약보증금으로 계약금액의 100분의 10에 해당하는 금액을 납부한다.",
+    "ground_truth": [
+      "LCAE_51_5"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제51조제5항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q058",
+    "category": "이행보증",
+    "clause_text": "계약상대자는 계약상 의무이행 보증을 위하여 계약금액의 100분의 20에 해당하는 계약보증금을 납부하여야 한다.",
+    "ground_truth": [
+      "LCAE_51_5"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제51조제5항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q059",
+    "category": "부당특약",
+    "clause_text": "계약상대자는 계약 이행과 관련하여 취득한 발주기관의 자료를 계약 목적 외로 사용하거나 제3자에게 누설하여서는 아니 된다.",
+    "ground_truth": [
+      "PYG_9_10_2_나"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방자치단체 용역계약 일반조건 제9장_제10절_제2항_나",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q060",
+    "category": "대금지급",
+    "clause_text": "발주기관이 대가 지급기한을 경과하여 대금을 지급하더라도 지연이자는 지급하지 아니한다.",
+    "ground_truth": [
+      "LCA_18_2"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 제18조제2항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q061",
+    "category": "물가변동",
+    "clause_text": "물가변동 조정 시 품목조정률을 초과하여 계약상대자가 제시하는 금액으로 증액한다.",
+    "ground_truth": [
+      "LCAE_73_1_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제73조제1항제1호",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q062",
+    "category": "지체상금",
+    "clause_text": "천재지변 등 계약상대자의 책임 없는 사유로 이행이 지체된 경우 해당 일수는 지체일수에서 제외하며, 그 입증책임은 계약상대자에게 있다.",
+    "ground_truth": [
+      "LCAE_90_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제90조제1항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q063",
+    "category": "지체상금",
+    "clause_text": "계약상대자의 책임 여부와 무관하게 납품기한을 경과한 모든 일수를 지체일수에 산입하여 지연배상금을 부과한다.",
+    "ground_truth": [
+      "LCAE_90_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제90조제1항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q064",
+    "category": "지체상금",
+    "clause_text": "발주기관은 계약상대자의 사업 협조도 등을 고려하여 정당한 사유 없이도 지연배상금을 감면할 수 있다.",
+    "ground_truth": [
+      "LCA_30_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 제30조제1항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q065",
+    "category": "물가변동",
+    "clause_text": "본 계약은 계약 기간 중 물가변동을 이유로 한 계약금액 조정을 일절 청구하지 아니하기로 한다.",
+    "ground_truth": [
+      "LCAE_73_1_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제73조제1항제1호",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q066",
+    "category": "계약해제해지",
+    "clause_text": "계약상대자의 귀책사유로 계약이 해지되더라도 계약상대자는 손해배상 책임을 부담하지 아니하며 계약보증금도 반환받는다.",
+    "ground_truth": [
+      "LCA_15_3"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 제15조제3항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q067",
+    "category": "지식재산권",
+    "clause_text": "소프트웨어 산출물의 저작권은 발주기관과 계약상대자가 공동으로 소유하며, 발주기관의 활용을 보장한다.",
+    "ground_truth": [
+      "PPMA_43_의10_2"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "공유재산법 제43조의10제2항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q068",
+    "category": "하자담보",
+    "clause_text": "하자보수보증금은 계약금액의 100분의 1로 하며, 하자담보책임기간은 검수일부터 6개월로 단축한다.",
+    "ground_truth": [
+      "LCAR_70_1_6"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행규칙 제70조제1항제6호",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q069",
+    "category": "대금지급",
+    "clause_text": "발주기관과 계약상대자가 합의하는 경우 대가의 지급기한을 5일을 초과하지 않는 범위에서 연장할 수 있다.",
+    "ground_truth": [
+      "LCAE_67_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제67조제1항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q070",
+    "category": "이행보증",
+    "clause_text": "계약상대자는 계약상 의무이행 보증을 위하여 계약금액의 100분의 20에 해당하는 계약보증금을 납부하여야 한다.",
+    "ground_truth": [
+      "LCAE_51_5"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제51조제5항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q071",
+    "category": "이행보증",
+    "clause_text": "계약보증금은 현금 또는 보증서로 납부할 수 있으며, 보증서의 보증기간은 계약이행기간에 30일을 가산한 기간 이상으로 한다.",
+    "ground_truth": [
+      "LCAE_51_5"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제51조제5항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q072",
+    "category": "지체상금",
+    "clause_text": "지연배상금은 계약금액의 1000분의 1.3을 적용하되, 지체일수 산정 시작일을 계약서에 명시한 준공기한 다음 날로 한다.",
+    "ground_truth": [
+      "LCAR_75"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행규칙 제75조",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q073",
+    "category": "부당특약",
+    "clause_text": "발주기관은 사업 수행 중 필요하다고 인정하는 경우 계약상대자에게 추가 비용 지급 없이 과업 범위를 확대할 수 있다.",
+    "ground_truth": [
+      "LCA_6_3"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 제6조제3항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q074",
+    "category": "물가변동",
+    "clause_text": "계약 체결한 날부터 90일 이상 지나고 품목조정률이 100분의 3 이상 증감된 경우 계약금액을 조정하며, 조정기준일부터 90일 이내에는 다시 조정하지 아니한다.",
+    "ground_truth": [
+      "LCAE_73_1_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제73조제1항제1호",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q075",
+    "category": "검사",
+    "clause_text": "발주기관은 계약상대자로부터 이행 완료 통지를 받은 날부터 14일 이내에 계약 이행 내용의 전부 또는 일부에 대하여 검사를 한다.",
+    "ground_truth": [
+      "LCAE_64_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제64조제1항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q076",
+    "category": "지체상금",
+    "clause_text": "계약상대자가 납품기한을 경과한 경우 지연배상금률은 1일당 계약금액의 1000분의 3으로 한다.",
+    "ground_truth": [
+      "LCAR_75"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행규칙 제75조",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q077",
+    "category": "이행보증",
+    "clause_text": "계약상대자가 계약을 이행하지 못한 경우, 이미 검사를 마친 기성부분에 해당하는 대가 전액을 계약보증금과 함께 발주기관에 귀속한다.",
+    "ground_truth": [
+      "LCAE_54_3"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제54조제3항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q078",
+    "category": "물가변동",
+    "clause_text": "물가변동 조정 시 품목조정률을 초과하여 계약상대자가 제시하는 금액으로 증액한다.",
+    "ground_truth": [
+      "LCAE_73_1_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제73조제1항제1호",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q079",
+    "category": "물가변동",
+    "clause_text": "발주기관은 계약상대자의 물가변동 계약금액 조정 청구에 대하여 예산 사정을 이유로 이를 거부할 수 있다.",
+    "ground_truth": [
+      "LCAE_73_1_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제73조제1항제1호",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q080",
+    "category": "부당특약",
+    "clause_text": "발주기관은 사업 수행 중 필요하다고 인정하는 경우 계약상대자에게 추가 비용 지급 없이 과업 범위를 확대할 수 있다.",
+    "ground_truth": [
+      "LCA_6_3"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 제6조제3항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q081",
+    "category": "과업범위",
+    "clause_text": "과업내용이 변경되더라도 계약금액은 일절 조정하지 아니한다.",
+    "ground_truth": [
+      "LCAE_74_9"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제74조제9항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q082",
+    "category": "물가변동",
+    "clause_text": "계약 체결한 날부터 90일 이상 지나고 품목조정률이 100분의 3 이상 증감된 경우 계약금액을 조정하며, 조정기준일부터 90일 이내에는 다시 조정하지 아니한다.",
+    "ground_truth": [
+      "LCAE_73_1_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제73조제1항제1호",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q083",
+    "category": "이행보증",
+    "clause_text": "계약상대자가 계약을 이행하지 못한 경우, 이미 검사를 마친 기성부분에 해당하는 대가 전액을 계약보증금과 함께 발주기관에 귀속한다.",
+    "ground_truth": [
+      "LCAE_54_3"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제54조제3항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q084",
+    "category": "하자담보",
+    "clause_text": "소프트웨어사업의 하자담보책임기간은 검수 완료일부터 1년으로 하며, 천재지변 등 불가항력으로 인한 하자는 담보책임에서 제외한다.",
+    "ground_truth": [
+      "SWPA_60_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "소프트웨어 진흥법 제60조제1항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q085",
+    "category": "하도급",
+    "clause_text": "계약상대자는 필요 시 사업금액의 100분의 70까지 하도급할 수 있다.",
+    "ground_truth": [
+      "SWPA_51_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "소프트웨어 진흥법 제51조제1항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q086",
+    "category": "계약해제해지",
+    "clause_text": "계약상대자가 정당한 사유 없이 착수기일을 경과하고도 이행에 착수하지 아니한 경우 발주기관은 계약을 해지할 수 있다.",
+    "ground_truth": [
+      "LCA_30_의2_1_5"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 제30조의2제1항제5호",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q087",
+    "category": "대금지급",
+    "clause_text": "발주기관은 계약상대자로부터 대가 지급 청구를 받은 날부터 5일 이내에 검사 내용에 따라 확정된 대가를 지급한다.",
+    "ground_truth": [
+      "LCAE_67_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제67조제1항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q088",
+    "category": "지식재산권",
+    "clause_text": "본 사업으로 생성된 모든 소프트웨어 산출물의 저작권은 전부 계약상대자에게 귀속한다.",
+    "ground_truth": [
+      "PPMA_43_의10_2"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "공유재산법 제43조의10제2항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q089",
+    "category": "지식재산권",
+    "clause_text": "본 사업으로 생성된 모든 소프트웨어 산출물의 저작권은 전부 계약상대자에게 귀속한다.",
+    "ground_truth": [
+      "PPMA_43_의10_2"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "공유재산법 제43조의10제2항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q090",
+    "category": "대금지급",
+    "clause_text": "발주기관과 계약상대자가 합의하는 경우 대가의 지급기한을 5일을 초과하지 않는 범위에서 연장할 수 있다.",
+    "ground_truth": [
+      "LCAE_67_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제67조제1항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q091",
+    "category": "하자담보",
+    "clause_text": "하자보수보증금은 계약금액의 100분의 1로 하며, 하자담보책임기간은 검수일부터 6개월로 단축한다.",
+    "ground_truth": [
+      "LCAR_70_1_6"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행규칙 제70조제1항제6호",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q092",
+    "category": "지체상금",
+    "clause_text": "계약상대자가 납품기한을 경과한 경우 지연배상금률은 1일당 계약금액의 1000분의 3으로 한다.",
+    "ground_truth": [
+      "LCAR_75"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행규칙 제75조",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q093",
+    "category": "검사",
+    "clause_text": "발주기관은 계약상대자로부터 이행 완료 통지를 받은 날부터 14일 이내에 계약 이행 내용의 전부 또는 일부에 대하여 검사를 한다.",
+    "ground_truth": [
+      "LCAE_64_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제64조제1항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q094",
+    "category": "부당특약",
+    "clause_text": "본 계약에 정하지 아니한 사항은 지방계약법령 및 관련 예규에 따르며, 법령에 위반되는 특약은 그 효력을 인정하지 아니한다.",
+    "ground_truth": [
+      "LCA_6_3"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 제6조제3항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q095",
+    "category": "부당특약",
+    "clause_text": "계약상대자는 계약 이행 과정에서 발생한 모든 손해에 대하여 귀책사유 유무와 관계없이 무한책임을 부담한다.",
+    "ground_truth": [
+      "LCA_6_3"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 제6조제3항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q096",
+    "category": "하자담보",
+    "clause_text": "본 용역계약은 하자보수보증금 납부를 면제하며, 별도의 하자담보책임을 부담하지 아니한다.",
+    "ground_truth": [
+      "LCAR_70_2_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행규칙 제70조제2항제1호",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q097",
+    "category": "하자담보",
+    "clause_text": "소프트웨어사업의 하자담보책임기간은 검수 완료일부터 1년으로 하며, 천재지변 등 불가항력으로 인한 하자는 담보책임에서 제외한다.",
+    "ground_truth": [
+      "SWPA_60_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "소프트웨어 진흥법 제60조제1항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q098",
+    "category": "하도급",
+    "clause_text": "계약상대자는 필요 시 사업금액의 100분의 70까지 하도급할 수 있다.",
+    "ground_truth": [
+      "SWPA_51_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "소프트웨어 진흥법 제51조제1항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q099",
+    "category": "물가변동",
+    "clause_text": "발주기관은 설계변경이나 과업 증가가 없더라도 계약상대자의 요청에 따라 계약금액을 증액할 수 있다.",
+    "ground_truth": [
+      "LCAE_74_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제74조제1항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q100",
+    "category": "과업범위",
+    "clause_text": "과업내용이 변경되더라도 계약금액은 일절 조정하지 아니한다.",
+    "ground_truth": [
+      "LCAE_74_9"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제74조제9항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q101",
+    "category": "이행보증",
+    "clause_text": "계약상대자가 계약상 의무를 이행하지 아니한 경우 계약보증금은 발주기관에 귀속되며, 귀속 절차는 발주기관이 정한 기준에 따른다.",
+    "ground_truth": [
+      "LCAE_54_1_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제54조제1항제1호",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q102",
+    "category": "지체상금",
+    "clause_text": "계약상대자가 납품기한을 경과한 경우 지연배상금률은 1일당 계약금액의 1000분의 3으로 한다.",
+    "ground_truth": [
+      "LCAR_75"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행규칙 제75조",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q103",
+    "category": "부당특약",
+    "clause_text": "본 계약에 정하지 아니한 사항은 지방계약법령 및 관련 예규에 따르며, 법령에 위반되는 특약은 그 효력을 인정하지 아니한다.",
+    "ground_truth": [
+      "LCA_6_3"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 제6조제3항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q104",
+    "category": "검사",
+    "clause_text": "발주기관은 이행 완료 통지를 받은 후 검사 시기를 별도로 정하지 아니하며, 검사 지연으로 인한 책임을 지지 아니한다.",
+    "ground_truth": [
+      "LCAE_64_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제64조제1항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q105",
+    "category": "하자담보",
+    "clause_text": "본 용역계약은 하자보수보증금 납부를 면제하며, 별도의 하자담보책임을 부담하지 아니한다.",
+    "ground_truth": [
+      "LCAR_70_2_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행규칙 제70조제2항제1호",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q106",
+    "category": "계약해제해지",
+    "clause_text": "계약상대자의 귀책사유로 계약이 해지되더라도 계약상대자는 손해배상 책임을 부담하지 아니하며 계약보증금도 반환받는다.",
+    "ground_truth": [
+      "LCA_15_3"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 제15조제3항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q107",
+    "category": "대금지급",
+    "clause_text": "발주기관은 계약상대자로부터 대가 지급 청구를 받은 날부터 5일 이내에 검사 내용에 따라 확정된 대가를 지급한다.",
+    "ground_truth": [
+      "LCAE_67_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제67조제1항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q108",
+    "category": "물가변동",
+    "clause_text": "계약 체결한 날부터 90일 이상 지나고 품목조정률이 100분의 3 이상 증감된 경우 계약금액을 조정하며, 조정기준일부터 90일 이내에는 다시 조정하지 아니한다.",
+    "ground_truth": [
+      "LCAE_73_1_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제73조제1항제1호",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q109",
+    "category": "물가변동",
+    "clause_text": "발주기관은 계약상대자의 물가변동 계약금액 조정 청구에 대하여 예산 사정을 이유로 이를 거부할 수 있다.",
+    "ground_truth": [
+      "LCAE_73_1_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제73조제1항제1호",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q110",
+    "category": "지체상금",
+    "clause_text": "발주기관은 계약상대자의 사업 협조도 등을 고려하여 정당한 사유 없이도 지연배상금을 감면할 수 있다.",
+    "ground_truth": [
+      "LCA_30_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 제30조제1항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q111",
+    "category": "지식재산권",
+    "clause_text": "소프트웨어 산출물의 저작권은 발주기관과 계약상대자가 공동으로 소유하며, 발주기관의 활용을 보장한다.",
+    "ground_truth": [
+      "PPMA_43_의10_2"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "공유재산법 제43조의10제2항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q112",
+    "category": "물가변동",
+    "clause_text": "설계변경 또는 과업내용 변경으로 계약금액 조정 사유가 발생한 경우 그에 상응하여 계약금액을 조정한다.",
+    "ground_truth": [
+      "LCAE_74_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제74조제1항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q113",
+    "category": "지식재산권",
+    "clause_text": "발주기관이 산출물의 반출을 요청하는 경우 국가안보 등 정당한 사유가 없으면 계약상대자는 이를 승인한다.",
+    "ground_truth": [
+      "SWPA_59_1"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "소프트웨어 진흥법 제59조제1항",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q114",
+    "category": "계약해제해지",
+    "clause_text": "계약상대자가 정당한 사유 없이 착수기일을 경과하고도 이행에 착수하지 아니한 경우 발주기관은 계약을 해지할 수 있다.",
+    "ground_truth": [
+      "LCA_30_의2_1_5"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 제30조의2제1항제5호",
+    "_source_판정": "일치"
+  },
+  {
+    "query_id": "Q115",
+    "category": "부당특약",
+    "clause_text": "계약상대자는 발주기관의 요구가 있을 경우 계약서에 명시되지 않은 업무라도 무상으로 수행하여야 한다.",
+    "ground_truth": [
+      "LCA_6_3"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 제6조제3항",
+    "_source_판정": "불일치"
+  },
+  {
+    "query_id": "Q116",
+    "category": "이행보증",
+    "clause_text": "계약보증금은 현금 또는 보증서로 납부할 수 있으며, 보증서의 보증기간은 계약이행기간에 30일을 가산한 기간 이상으로 한다.",
+    "ground_truth": [
+      "LCAE_51_5"
+    ],
+    "hard_negatives": [],
+    "_source_근거": "지방계약법 시행령 제51조제5항",
+    "_source_판정": "일치"
+  }
+]

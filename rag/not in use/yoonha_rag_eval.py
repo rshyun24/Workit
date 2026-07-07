@@ -22,7 +22,7 @@ Workit - RAG 파라미터 sweep (alpha × reranking on/off, 캐싱 적용)
     "먼저 계산된 값을 나중에 재사용"하는 방식이라 순서에 의존하지 않는다.
 
 입력:
-  - gold_standard_v3.json : [{"query_id", "query", "relevant_docs_jo": [...],
+  - eval_set.json : [{"query_id", "query", "relevant_docs_jo": [...],
     "relevant_docs_ho": [...]}]
     (variant별로 정답 필드가 다름 — 아래 GT_FIELD_BY_VARIANT 참고)
 
@@ -76,7 +76,7 @@ def get_qdrant_client() -> QdrantClient:
     return QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
 
 _THIS_DIR = Path(__file__).resolve().parent
-GOLD_STANDARD_PATH = _THIS_DIR.parent / "rag" / "evaluation" / "gold_standard_v3.json"
+GOLD_STANDARD_PATH = _THIS_DIR.parent / "rag" / "evaluation" / "eval_set.json"
 RESULTS_CSV = _THIS_DIR / "eval_results.csv"
 
 # sweep 그리드 — 필요하면 여기만 수정

@@ -9,7 +9,7 @@ from pathlib import Path
 from FlagEmbedding import BGEM3FlagModel
 
 _THIS_DIR   = Path(__file__).resolve().parent
-_DATA_DIR   = _THIS_DIR.parent / "data" / "export"
+_DATA_DIR   = _THIS_DIR.parent / "data" / "export_old"
 
 CHUNKS_PATH  = _DATA_DIR / "chunks.json"
 VECTORS_PATH = _DATA_DIR / "vectors.npz"

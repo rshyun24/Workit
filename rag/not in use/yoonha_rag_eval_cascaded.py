@@ -31,7 +31,7 @@ Workit - 계층형(Cascaded) RAG 파라미터 sweep
   캐시와 parent/cross-ref scroll 캐시는 jo_top_k와 무관하게 그대로
   재사용된다.
 
-입력/출력은 yoonha_rag_eval.py와 동일한 gold_standard_v3.json,
+입력/출력은 yoonha_rag_eval.py와 동일한 eval_set.json,
 eval_results_cascaded.csv (파일명만 다름, 기존 결과를 덮어쓰지 않음).
 """
 
@@ -80,7 +80,7 @@ def get_qdrant_client() -> QdrantClient:
     return QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
 
 _THIS_DIR = Path(__file__).resolve().parent
-GOLD_STANDARD_PATH = _THIS_DIR.parent / "rag" / "evaluation" / "gold_standard_v3.json"
+GOLD_STANDARD_PATH = _THIS_DIR.parent / "rag" / "evaluation" / "eval_set.json"
 RESULTS_CSV = _THIS_DIR / "eval_results_cascaded.csv"
 
 # sweep 그리드 — 필요하면 여기만 수정

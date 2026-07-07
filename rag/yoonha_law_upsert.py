@@ -1,736 +1,185 @@
 """
-Workit - 계약서 검토 RAG 파이프라인 (3-variant)
-파일명: yoonha_law_rag.py
+Workit - fixedid 임베딩 결과 Qdrant 업로드 (upsert)
+파일명: rag/yoonha_law_upsert.py
 
-컬렉션별 독립 RAG (성능 비교용):
-  - JoRAG      : law_kb_jo      (조 단위, parent 없음)
-  - HoRAG      : law_kb_ho      (호 단위, parent fetch → 조 텍스트)
-  - HoXrefRAG  : law_kb_ho_xref (호 단위 + cross_refs, parent fetch → 조 텍스트)
+이 파일은 임베딩(Colab에서 만든 vectors_*.npz, sparse_weights_*.json)과
+파싱 결과(chunks_*_fixedid.json)를 합쳐서 Qdrant에 upsert하는 "업로드 전용"
+스크립트다. 검색은 별도 파일인 rag/yoonha_law_rag.py에서 담당하며, 그 스크립트는
+여기서 만든 컬렉션이 이미 존재한다고 가정하고 조회만 한다. 즉 순서는 항상:
+  1) 이 스크립트(rag/yoonha_law_upsert.py) 실행 → 컬렉션 생성/upsert
+  2) rag/yoonha_law_rag.py에서 검색
 
-공통 출력: list[ClauseResult]  ← 항상 조 단위로 반환
+입력 (project_root/data/merged/ 에 위치, 스크립트 실행 위치와 무관하게 자동 탐색):
+  - chunks_jo_fixedid.json / chunks_ho_fixedid.json   (merge_chunks.py 출력, payload 원본)
+  - vectors_jo_fixedid.npz / vectors_ho_fixedid.npz   (dense 벡터 + chunk_ids)
+  - sparse_weights_jo_fixedid.json / sparse_weights_ho_fixedid.json (sparse 가중치, chunk_ids와 순서 동일)
+
+출력:
+  - Qdrant collection "law_kb_jo_fixedid" (dense + sparse named vectors)
+  - Qdrant collection "law_kb_ho_fixedid" (dense + sparse named vectors)
+
+주의:
+  - chunk_id를 key로 세 입력을 정렬/매칭한다 (npz/sparse의 순서가 chunks json과
+    다를 수 있으므로, 순서를 믿지 말고 항상 chunk_id로 매칭).
+  - payload에는 파서가 만든 필드를 그대로 싣는다: chunk_id, law_name, article_id,
+    article_number, text, hierarchy, parent_chunk_id, cross_refs, is_ref_article,
+    is_upper_law. (category / is_risk_ref 등 계약서 리스크 태깅 필드는 별도 태깅
+    단계가 아직 없어서 이 시점엔 채워지지 않음 — yoonha_law_rag.py 쪽에서
+    laws_ref.json으로 보강하는 구조를 그대로 유지)
+
+사용법:
+    pip install qdrant-client
+    python rag/yoonha_law_upsert.py
 """
 
-from __future__ import annotations
-
 import json
-import re
-from dataclasses import dataclass, field, asdict
 from pathlib import Path
 
-import torch
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
-from FlagEmbedding import BGEM3FlagModel
+import numpy as np
 from qdrant_client import QdrantClient
-from qdrant_client.models import SparseVector
+from qdrant_client.models import (
+    Distance,
+    PointStruct,
+    SparseVector,
+    SparseVectorParams,
+    VectorParams,
+)
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# 경로 / 설정
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-_THIS_DIR     = Path(__file__).resolve().parent
-_DATA_DIR     = _THIS_DIR.parent / "data"
-LAWS_REF_PATH = _DATA_DIR / "hn_seed" / "law_refs.json"
+DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "merged"
 
 QDRANT_HOST = "localhost"
 QDRANT_PORT = 6333
 
-COLLECTION_JO      = "law_kb_jo"
-COLLECTION_HO      = "law_kb_ho"
-COLLECTION_HO_XREF = "law_kb_ho_xref"
+DATASETS = {
+    "jo_fixedid": {
+        "chunks_file":  DATA_DIR / "chunks_jo_fixedid.json",
+        "vectors_file": DATA_DIR / "vectors_jo_fixedid.npz",
+        "sparse_file":  DATA_DIR / "sparse_weights_jo_fixedid.json",
+        "collection":   "law_kb_jo_fixedid",
+    },
+    "ho_fixedid": {
+        "chunks_file":  DATA_DIR / "chunks_ho_fixedid.json",
+        "vectors_file": DATA_DIR / "vectors_ho_fixedid.npz",
+        "sparse_file":  DATA_DIR / "sparse_weights_ho_fixedid.json",
+        "collection":   "law_kb_ho_fixedid",
+    },
+}
 
-EMBED_MODEL = "BAAI/bge-m3"
-
-FETCH_K   = 50
-RERANK1_K = 12
-RERANK2_K = 7
-TOP_K     = 10
-RRF_ALPHA = 1.0   # 1.0 = dense only, 0.0 = sparse only, 0.5 = 균등
-
-RERANKER1_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
-RERANKER2_MODEL = "BAAI/bge-reranker-v2-m3"
-
-
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Cross-encoder Reranker
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-class CrossEncoderReranker:
-    """
-    transformers AutoModel 기반 Cross-encoder reranker.
-    FlagReranker 대체용 — 최신 transformers 호환.
-    """
-
-    def __init__(self, model_name: str, device: str = "cpu"):
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.model     = AutoModelForSequenceClassification.from_pretrained(model_name)
-        self.model.to(device)
-        self.model.eval()
-        self.device = device
-
-    def compute_score(
-        self,
-        pairs     : list[list[str]],
-        batch_size: int  = 32,
-        normalize : bool = True,
-    ) -> list[float]:
-        all_scores: list[float] = []
-
-        for i in range(0, len(pairs), batch_size):
-            batch   = pairs[i : i + batch_size]
-            encoded = self.tokenizer(
-                [p[0] for p in batch],
-                [p[1] for p in batch],
-                padding=True,
-                truncation=True,
-                max_length=512,
-                return_tensors="pt",
-            )
-            encoded = {k: v.to(self.device) for k, v in encoded.items()}
-
-            with torch.no_grad():
-                logits = self.model(**encoded).logits
-
-            scores = logits.squeeze(-1) if logits.shape[-1] == 1 else logits[:, 1]
-            if normalize:
-                scores = torch.sigmoid(scores)
-
-            all_scores.extend(scores.cpu().tolist())
-
-        return all_scores
+# 임베딩에 쓴 payload 필드 (text는 인덱싱만 하고 payload에도 남겨서 리랭크/표시에 사용)
+PAYLOAD_FIELDS = [
+    "chunk_id", "law_name", "article_id", "article_number", "title",
+    "text", "hierarchy", "parent_chunk_id", "cross_refs",
+    "is_ref_article", "is_upper_law",
+]
 
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# 데이터 클래스
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-@dataclass
-class LawRef:
-    """검색된 법령 조문 1건."""
-    chunk_id   : str
-    article    : str
-    category   : str
-    law_name   : str
-    chunk_text : str
-    score      : float
-    is_risk_ref: bool
-    parent_id  : str = ""
-    cross_refs : list[str] = field(default_factory=list)  # ho_xref 전용
-
-
-@dataclass
-class ClauseResult:
-    """계약서 조항 1건의 검색 결과 — 항상 조 단위."""
-    clause_number: str
-    clause_text  : str
-    page         : int            = 0
-    bbox         : dict | None    = None
-    law_refs     : list[LawRef]   = field(default_factory=list)
-    categories   : list[str]      = field(default_factory=list)
-
-
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# 공통 유틸
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-def load_laws_ref(path: Path = LAWS_REF_PATH) -> dict[str, dict]:
-    if not path.exists():
-        print(f"  ⚠️  laws_ref.json 없음: {path}")
-        return {}
+def load_chunks_by_id(path: Path) -> dict[str, dict]:
     with open(path, encoding="utf-8") as f:
-        return json.load(f)
+        chunks = json.load(f)
+    return {c["chunk_id"]: c for c in chunks}
 
 
-def load_embed_model(model_name: str = EMBED_MODEL, use_fp16: bool = True) -> BGEM3FlagModel:
-    print(f"📦 임베딩 모델 로드: {model_name}")
-    return BGEM3FlagModel(model_name, use_fp16=use_fp16)
+def load_sparse_by_id(path: Path, chunk_ids_order: list[str]) -> dict[str, dict[int, float]]:
+    """sparse_weights_*.json은 chunk_ids_order(npz의 chunk_ids)와 같은 순서라고 가정하고 매칭."""
+    with open(path, encoding="utf-8") as f:
+        sparse_list = json.load(f)
+    if len(sparse_list) != len(chunk_ids_order):
+        raise ValueError(
+            f"sparse_weights 길이({len(sparse_list)})와 chunk_ids 길이({len(chunk_ids_order)})가 다릅니다. "
+            "임베딩 노트북에서 저장한 순서가 어긋났을 가능성이 있습니다."
+        )
+    return {
+        cid: {int(tok): float(w) for tok, w in sw.items()}
+        for cid, sw in zip(chunk_ids_order, sparse_list)
+    }
 
 
-def load_rerankers(device: str = "cpu") -> tuple[CrossEncoderReranker, CrossEncoderReranker]:
-    print(f"📦 Re-ranker 1단계 로드: {RERANKER1_MODEL}")
-    r1 = CrossEncoderReranker(RERANKER1_MODEL, device=device)
-    print(f"📦 Re-ranker 2단계 로드: {RERANKER2_MODEL}")
-    r2 = CrossEncoderReranker(RERANKER2_MODEL, device=device)
-    return r1, r2
-
-
-def get_vectors(
-    text : str,
-    model: BGEM3FlagModel,
-) -> tuple[list[float], dict[int, float]]:
-    output = model.encode(
-        [text],
-        return_dense=True,
-        return_sparse=True,
-        return_colbert_vecs=False,
+def ensure_collection(client: QdrantClient, name: str, dense_dim: int) -> None:
+    if client.collection_exists(name):
+        print(f"  [SKIP] 컬렉션 이미 존재: {name}")
+        return
+    client.create_collection(
+        collection_name=name,
+        vectors_config={"dense": VectorParams(size=dense_dim, distance=Distance.COSINE)},
+        sparse_vectors_config={"sparse": SparseVectorParams()},
     )
-    dense_vec       = output["dense_vecs"][0].tolist()
-    lexical_weights = output["lexical_weights"][0]
-
-    sparse_vec: dict[int, float] = {}
-    for token_str, weight in lexical_weights.items():
-        token_id = model.tokenizer.convert_tokens_to_ids(token_str)
-        if isinstance(token_id, int):
-            sparse_vec[token_id] = sparse_vec.get(token_id, 0.0) + float(weight)
-
-    return dense_vec, sparse_vec
+    print(f"  [CREATE] 컬렉션 생성: {name} (dense_dim={dense_dim})")
 
 
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# 계약서 청킹 (조 단위 출력)
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+def build_points(
+    chunk_ids: list[str],
+    dense_vectors: np.ndarray,
+    sparse_by_id: dict[str, dict[int, float]],
+    chunks_by_id: dict[str, dict],
+) -> list[PointStruct]:
+    points = []
+    missing_payload = 0
 
-def chunk_contract(text: str) -> list[dict]:
-    """계약서를 조 단위로 청킹."""
-    HANG_MAP = {c: i + 1 for i, c in enumerate("①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮")}
-    HO_SPLIT_PATTERN = r"(?:^|\s)(\d{1,2}\.\s)"
-
-    text = text.strip()
-    header_pattern = re.compile(r"제(\d+)조(?:의(\d+))?\s*\(([^)]*)\)")
-    raw_matches    = list(header_pattern.finditer(text))
-
-    candidates = []
-    for m in raw_matches:
-        prefix = text[max(0, m.start() - 5):m.start()]
-        if re.search(r"법\s*$", prefix):
-            continue
-        num           = int(m.group(1))
-        sub           = m.group(2)
-        clause_number = f"제{m.group(1)}조" + (f"의{sub}" if sub else "")
-        candidates.append((num, clause_number, m.start()))
-
-    header_spans = []
-    last_num = 0
-    for num, clause_number, start in candidates:
-        if num >= last_num and num <= last_num + 5:
-            header_spans.append((clause_number, start))
-            last_num = num
-
-    def split_into_ho(parent_number: str, unit_text: str) -> list[dict]:
-        ho_splits = re.split(HO_SPLIT_PATTERN, unit_text)
-        if len(ho_splits) <= 1:
-            return [{"clause_number": parent_number, "clause_text": unit_text}]
-
-        head   = ho_splits[0].strip()
-        chunks = []
-        if head:
-            chunks.append({"clause_number": parent_number, "clause_text": head})
-
-        k, last_ho_num = 1, 0
-        while k < len(ho_splits) - 1:
-            marker       = ho_splits[k].strip()
-            ho_num_match = re.match(r"(\d{1,2})\.", marker)
-            ho_num       = int(ho_num_match.group(1)) if ho_num_match else (k // 2 + 1)
-            ho_body      = ho_splits[k + 1].strip() if k + 1 < len(ho_splits) else ""
-
-            if ho_num == last_ho_num + 1 and ho_body:
-                chunks.append({
-                    "clause_number": f"{parent_number}제{ho_num}호",
-                    "clause_text":   re.sub(r"\s+", " ", f"{marker} {ho_body}").strip(),
-                })
-                last_ho_num = ho_num
-            elif ho_body:
-                if chunks:
-                    chunks[-1]["clause_text"] += f" {marker} {ho_body}"
-                else:
-                    chunks.append({"clause_number": parent_number, "clause_text": f"{marker} {ho_body}"})
-            k += 2
-
-        return chunks if chunks else [{"clause_number": parent_number, "clause_text": unit_text}]
-
-    clauses = []
-    for idx, (clause_number, start) in enumerate(header_spans):
-        end       = header_spans[idx + 1][1] if idx + 1 < len(header_spans) else len(text)
-        raw_block = text[start:end].strip()
-
-        m          = header_pattern.match(raw_block)
-        raw_header = m.group(0) if m else clause_number
-        body       = raw_block[m.end():].strip() if m else raw_block
-
-        if not body:
+    for idx, cid in enumerate(chunk_ids):
+        chunk = chunks_by_id.get(cid)
+        if chunk is None:
+            missing_payload += 1
             continue
 
-        hang_splits = re.split(r"([①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮])", body)
+        payload = {k: chunk.get(k) for k in PAYLOAD_FIELDS if k in chunk}
 
-        if len(hang_splits) <= 1:
-            clause_text = re.sub(r"\s+", " ", f"{raw_header} {body}").strip()
-            clauses.extend(split_into_ho(clause_number, clause_text))
+        sparse = sparse_by_id.get(cid, {})
+        sparse_vec = SparseVector(
+            indices=list(sparse.keys()),
+            values=list(sparse.values()),
+        )
+
+        points.append(PointStruct(
+            id=idx,  # Qdrant point id는 정수/UUID만 허용 → chunk_id는 payload에 별도 저장
+            vector={
+                "dense": dense_vectors[idx].tolist(),
+                "sparse": sparse_vec,
+            },
+            payload=payload,
+        ))
+
+    if missing_payload:
+        print(f"  ⚠️  chunks json에 없는 chunk_id {missing_payload}개는 스킵됨 (dense/sparse는 있는데 payload가 없는 경우)")
+
+    return points
+
+
+def upload_dataset(client: QdrantClient, name: str, cfg: dict, batch_size: int = 256) -> None:
+    print(f"\n=== {name} ===")
+
+    npz = np.load(cfg["vectors_file"], allow_pickle=True)
+    dense_vectors = npz["vectors"]
+    chunk_ids = [str(c) for c in npz["chunk_ids"]]
+
+    chunks_by_id = load_chunks_by_id(cfg["chunks_file"])
+    sparse_by_id = load_sparse_by_id(cfg["sparse_file"], chunk_ids)
+
+    ensure_collection(client, cfg["collection"], dense_vectors.shape[1])
+
+    points = build_points(chunk_ids, dense_vectors, sparse_by_id, chunks_by_id)
+    print(f"  업로드할 point 수: {len(points)}")
+
+    for i in range(0, len(points), batch_size):
+        batch = points[i:i + batch_size]
+        client.upsert(collection_name=cfg["collection"], points=batch)
+        print(f"    upsert {i + len(batch)}/{len(points)}", end="\r")
+
+    print(f"\n  ✅ 완료: {cfg['collection']} ({len(points)} points)")
+
+
+def main():
+    client = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
+
+    for name, cfg in DATASETS.items():
+        for key in ("chunks_file", "vectors_file", "sparse_file"):
+            if not cfg[key].exists():
+                print(f"[ERROR] {name}: {cfg[key]} 파일이 없습니다. 건너뜁니다.")
+                break
         else:
-            j = 1
-            while j < len(hang_splits) - 1:
-                hang_char   = hang_splits[j]
-                hang_body   = hang_splits[j + 1].strip() if j + 1 < len(hang_splits) else ""
-                hang_num    = HANG_MAP.get(hang_char, j)
-                if hang_body:
-                    hang_text = re.sub(r"\s+", " ", f"{raw_header} {hang_char}{hang_body}").strip()
-                    clauses.extend(split_into_ho(f"{clause_number}제{hang_num}항", hang_text))
-                j += 2
+            upload_dataset(client, name, cfg)
 
-    if not clauses:
-        paragraphs = [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
-        clauses = [
-            {"clause_number": f"단락{i + 1}", "clause_text": para}
-            for i, para in enumerate(paragraphs)
-        ]
+    print("\nDone!")
 
-    return clauses
 
-
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# 공통 검색 / 리랭크 / parent fetch
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-def _hybrid_search(
-    clause_text: str,
-    client     : QdrantClient,
-    model      : BGEM3FlagModel,
-    collection : str,
-    fetch_k    : int   = FETCH_K,
-    alpha      : float = RRF_ALPHA,
-) -> list[dict]:
-    """Dense + Sparse 하이브리드 검색 (수동 RRF)."""
-    dense_vec, sparse_vec = get_vectors(clause_text, model)
-    indices = list(sparse_vec.keys())
-    values  = list(sparse_vec.values())
-    RRF_K   = 60
-
-    try:
-        dense_results = client.query_points(
-            collection_name=collection,
-            query=dense_vec,
-            using="dense",
-            limit=fetch_k,
-            with_payload=True,
-        ).points
-
-        sparse_results = client.query_points(
-            collection_name=collection,
-            query=SparseVector(indices=indices, values=values),
-            using="sparse",
-            limit=fetch_k,
-            with_payload=True,
-        ).points
-
-    except Exception as e:
-        print(f"  ⚠️  sparse 검색 실패, dense만 사용: {e}")
-        dense_results = client.query_points(
-            collection_name=collection,
-            query=dense_vec,
-            using="dense",
-            limit=fetch_k,
-            with_payload=True,
-        ).points
-        sparse_results = []
-
-    scores: dict[str, dict] = {}
-
-    for rank, point in enumerate(dense_results, 1):
-        cid = point.payload.get("chunk_id", str(point.id))
-        scores[cid] = {
-            "payload":     point.payload,
-            "dense_rank":  rank,
-            "sparse_rank": len(dense_results) + 1,
-        }
-
-    for rank, point in enumerate(sparse_results, 1):
-        cid = point.payload.get("chunk_id", str(point.id))
-        if cid in scores:
-            scores[cid]["sparse_rank"] = rank
-        else:
-            scores[cid] = {
-                "payload":     point.payload,
-                "dense_rank":  len(sparse_results) + 1,
-                "sparse_rank": rank,
-            }
-
-    results = []
-    for cid, info in scores.items():
-        rrf_score = (
-            alpha         * (1 / (RRF_K + info["dense_rank"]))
-            + (1 - alpha) * (1 / (RRF_K + info["sparse_rank"]))
-        )
-        results.append({
-            "chunk_id" : cid,
-            "payload"  : info["payload"],
-            "rrf_score": rrf_score,
-        })
-
-    results.sort(key=lambda x: x["rrf_score"], reverse=True)
-    return results
-
-
-def _rerank(
-    query     : str,
-    candidates: list[dict],
-    reranker  : CrossEncoderReranker,
-    top_k     : int,
-) -> list[dict]:
-    if not candidates:
-        return []
-
-    texts  = [c["payload"].get("text", c["payload"].get("chunk_text", "")) for c in candidates]
-    pairs  = [[query, t] for t in texts]
-    scores = reranker.compute_score(pairs, normalize=True)
-
-    ranked = sorted(zip(scores, candidates), key=lambda x: x[0], reverse=True)
-    return [item for _, item in ranked[:top_k]]
-
-
-def _fetch_parent_texts(
-    candidates: list[dict],
-    client    : QdrantClient,
-    parent_collection: str = COLLECTION_JO,
-) -> list[dict]:
-    """parent_id로 조 단위 텍스트를 조회해 payload["text"]를 교체."""
-    parent_ids = list({
-        c["payload"].get("parent_id")
-        for c in candidates
-        if c["payload"].get("parent_id")
-    })
-
-    if not parent_ids:
-        return candidates
-
-    parent_texts: dict[str, str] = {}
-    try:
-        for parent_id in parent_ids:
-            results = client.scroll(
-                collection_name=parent_collection,
-                scroll_filter={
-                    "must": [{"key": "chunk_id", "match": {"value": parent_id}}]
-                },
-                limit=1,
-                with_payload=True,
-                with_vectors=False,
-            )
-            points = results[0]
-            if points:
-                p = points[0].payload
-                parent_texts[parent_id] = p.get("text", p.get("chunk_text", ""))
-    except Exception as e:
-        print(f"  ⚠️  parent fetch 실패: {e}")
-        return candidates
-
-    updated = []
-    for c in candidates:
-        pid = c["payload"].get("parent_id")
-        if pid and pid in parent_texts:
-            updated_payload         = dict(c["payload"])
-            updated_payload["text"] = parent_texts[pid]
-            updated.append({**c, "payload": updated_payload})
-        else:
-            updated.append(c)
-
-    return updated
-
-
-def _build_law_refs(
-    candidates : list[dict],
-    laws_ref   : dict[str, dict],
-    top_k      : int,
-    with_xref  : bool = False,
-) -> list[LawRef]:
-    law_refs: list[LawRef] = []
-    for c in candidates[:top_k]:
-        payload  = c["payload"]
-        chunk_id = payload.get("chunk_id", "")
-        ref_meta = laws_ref.get(chunk_id, {})
-
-        law_refs.append(LawRef(
-            chunk_id    = chunk_id,
-            article     = ref_meta.get("article",  payload.get("article_number", "")),
-            category    = ref_meta.get("category", payload.get("category", "")),
-            law_name    = payload.get("law_name",  ""),
-            chunk_text  = payload.get("text", payload.get("chunk_text", "")),
-            score       = round(float(c.get("rrf_score", 0.0)), 4),
-            is_risk_ref = bool(payload.get("is_risk_ref", False)),
-            parent_id   = payload.get("parent_id", "") or "",
-            cross_refs  = payload.get("cross_refs", []) if with_xref else [],
-        ))
-
-    return law_refs
-
-
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# RAG 1: JoRAG — 조 단위 검색
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-def _search_jo(
-    clause_text: str,
-    client     : QdrantClient,
-    model      : BGEM3FlagModel,
-    laws_ref   : dict[str, dict],
-    reranker1  : CrossEncoderReranker | None = None,
-    reranker2  : CrossEncoderReranker | None = None,
-    top_k      : int   = TOP_K,
-    alpha      : float = RRF_ALPHA,
-) -> list[LawRef]:
-    """
-    JoRAG: law_kb_jo에서 조 단위로 직접 검색.
-    parent fetch 없음 — 이미 조 단위가 최상위.
-    """
-    candidates = _hybrid_search(clause_text, client, model, COLLECTION_JO, FETCH_K, alpha)
-
-    if reranker1 and candidates:
-        candidates = _rerank(clause_text, candidates, reranker1, RERANK1_K)
-    if reranker2 and candidates:
-        candidates = _rerank(clause_text, candidates, reranker2, RERANK2_K)
-
-    return _build_law_refs(candidates, laws_ref, top_k, with_xref=False)
-
-
-def review_contract_jo(
-    contract_text: str,
-    client       : QdrantClient,
-    model        : BGEM3FlagModel,
-    laws_ref     : dict[str, dict] | None = None,
-    reranker1    : CrossEncoderReranker | None = None,
-    reranker2    : CrossEncoderReranker | None = None,
-    top_k        : int   = TOP_K,
-    alpha        : float = RRF_ALPHA,
-) -> list[ClauseResult]:
-    """JoRAG 메인 인터페이스."""
-    if laws_ref is None:
-        laws_ref = load_laws_ref()
-
-    clauses = chunk_contract(contract_text)
-    results : list[ClauseResult] = []
-    print(f"[JoRAG] 총 {len(clauses)}개 청크 검색 중...")
-
-    for i, clause in enumerate(clauses, 1):
-        print(f"  [{i}/{len(clauses)}] {clause['clause_number']} ...", end="\r")
-
-        law_refs   = _search_jo(
-            clause["clause_text"], client, model, laws_ref,
-            reranker1, reranker2, top_k, alpha,
-        )
-        categories = list(dict.fromkeys(r.category for r in law_refs if r.category))
-
-        results.append(ClauseResult(
-            clause_number=clause["clause_number"],
-            clause_text  =clause["clause_text"],
-            law_refs     =law_refs,
-            categories   =categories,
-        ))
-
-    print(f"\n[JoRAG] ✅ 완료")
-    return results
-
-
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# RAG 2: HoRAG — 호 단위 검색 + parent fetch
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-def _search_ho(
-    clause_text: str,
-    client     : QdrantClient,
-    model      : BGEM3FlagModel,
-    laws_ref   : dict[str, dict],
-    reranker1  : CrossEncoderReranker | None = None,
-    reranker2  : CrossEncoderReranker | None = None,
-    top_k      : int   = TOP_K,
-    alpha      : float = RRF_ALPHA,
-) -> list[LawRef]:
-    """
-    HoRAG: law_kb_ho에서 호 단위 검색 후
-    parent_id로 law_kb_jo에서 조 전체 텍스트 fetch.
-    """
-    candidates = _hybrid_search(clause_text, client, model, COLLECTION_HO, FETCH_K, alpha)
-
-    if reranker1 and candidates:
-        candidates = _rerank(clause_text, candidates, reranker1, RERANK1_K)
-
-    # parent fetch: 호 → 조 텍스트로 교체
-    candidates = _fetch_parent_texts(candidates, client, parent_collection=COLLECTION_JO)
-
-    if reranker2 and candidates:
-        candidates = _rerank(clause_text, candidates, reranker2, RERANK2_K)
-
-    return _build_law_refs(candidates, laws_ref, top_k, with_xref=False)
-
-
-def review_contract_ho(
-    contract_text: str,
-    client       : QdrantClient,
-    model        : BGEM3FlagModel,
-    laws_ref     : dict[str, dict] | None = None,
-    reranker1    : CrossEncoderReranker | None = None,
-    reranker2    : CrossEncoderReranker | None = None,
-    top_k        : int   = TOP_K,
-    alpha        : float = RRF_ALPHA,
-) -> list[ClauseResult]:
-    """HoRAG 메인 인터페이스."""
-    if laws_ref is None:
-        laws_ref = load_laws_ref()
-
-    clauses = chunk_contract(contract_text)
-    results : list[ClauseResult] = []
-    print(f"[HoRAG] 총 {len(clauses)}개 청크 검색 중...")
-
-    for i, clause in enumerate(clauses, 1):
-        print(f"  [{i}/{len(clauses)}] {clause['clause_number']} ...", end="\r")
-
-        law_refs   = _search_ho(
-            clause["clause_text"], client, model, laws_ref,
-            reranker1, reranker2, top_k, alpha,
-        )
-        categories = list(dict.fromkeys(r.category for r in law_refs if r.category))
-
-        results.append(ClauseResult(
-            clause_number=clause["clause_number"],
-            clause_text  =clause["clause_text"],
-            law_refs     =law_refs,
-            categories   =categories,
-        ))
-
-    print(f"\n[HoRAG] ✅ 완료")
-    return results
-
-
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# RAG 3: HoXrefRAG — 호 단위 + cross_refs + parent fetch
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-def _expand_with_cross_refs(
-    candidates: list[dict],
-    client    : QdrantClient,
-) -> list[dict]:
-    """
-    각 후보의 cross_refs에 있는 chunk_id를 law_kb_ho_xref에서 추가 조회.
-    이미 후보에 있는 chunk_id는 중복 추가하지 않음.
-    추가된 항목의 rrf_score는 원본의 절반 (참조 가중치 낮춤).
-    """
-    existing_ids  = {c["chunk_id"] for c in candidates}
-    extra_chunks  : list[dict] = []
-    ref_ids_total : list[str]  = []
-
-    for c in candidates:
-        cross_refs = c["payload"].get("cross_refs", [])
-        for ref_id in cross_refs:
-            if ref_id not in existing_ids and ref_id not in ref_ids_total:
-                ref_ids_total.append(ref_id)
-
-    if not ref_ids_total:
-        return candidates
-
-    try:
-        for ref_id in ref_ids_total:
-            results = client.scroll(
-                collection_name=COLLECTION_HO_XREF,
-                scroll_filter={
-                    "must": [{"key": "chunk_id", "match": {"value": ref_id}}]
-                },
-                limit=1,
-                with_payload=True,
-                with_vectors=False,
-            )
-            points = results[0]
-            if points:
-                p = points[0].payload
-                extra_chunks.append({
-                    "chunk_id" : ref_id,
-                    "payload"  : p,
-                    "rrf_score": 0.0,   # 리랭크에서 점수 재계산됨
-                })
-                existing_ids.add(ref_id)
-    except Exception as e:
-        print(f"  ⚠️  cross_ref fetch 실패: {e}")
-
-    return candidates + extra_chunks
-
-
-def _search_ho_xref(
-    clause_text: str,
-    client     : QdrantClient,
-    model      : BGEM3FlagModel,
-    laws_ref   : dict[str, dict],
-    reranker1  : CrossEncoderReranker | None = None,
-    reranker2  : CrossEncoderReranker | None = None,
-    top_k      : int   = TOP_K,
-    alpha      : float = RRF_ALPHA,
-) -> list[LawRef]:
-    """
-    HoXrefRAG: law_kb_ho_xref에서 호 단위 검색
-    → cross_refs 확장 → parent fetch (조 텍스트) → 2단계 리랭크.
-    """
-    candidates = _hybrid_search(clause_text, client, model, COLLECTION_HO_XREF, FETCH_K, alpha)
-
-    if reranker1 and candidates:
-        candidates = _rerank(clause_text, candidates, reranker1, RERANK1_K)
-
-    # cross_refs 확장 (참조 조문 추가 수집)
-    candidates = _expand_with_cross_refs(candidates, client)
-
-    # parent fetch: 호 → 조 텍스트로 교체
-    candidates = _fetch_parent_texts(candidates, client, parent_collection=COLLECTION_JO)
-
-    if reranker2 and candidates:
-        candidates = _rerank(clause_text, candidates, reranker2, RERANK2_K)
-
-    return _build_law_refs(candidates, laws_ref, top_k, with_xref=True)
-
-
-def review_contract_ho_xref(
-    contract_text: str,
-    client       : QdrantClient,
-    model        : BGEM3FlagModel,
-    laws_ref     : dict[str, dict] | None = None,
-    reranker1    : CrossEncoderReranker | None = None,
-    reranker2    : CrossEncoderReranker | None = None,
-    top_k        : int   = TOP_K,
-    alpha        : float = RRF_ALPHA,
-) -> list[ClauseResult]:
-    """HoXrefRAG 메인 인터페이스."""
-    if laws_ref is None:
-        laws_ref = load_laws_ref()
-
-    clauses = chunk_contract(contract_text)
-    results : list[ClauseResult] = []
-    print(f"[HoXrefRAG] 총 {len(clauses)}개 청크 검색 중...")
-
-    for i, clause in enumerate(clauses, 1):
-        print(f"  [{i}/{len(clauses)}] {clause['clause_number']} ...", end="\r")
-
-        law_refs   = _search_ho_xref(
-            clause["clause_text"], client, model, laws_ref,
-            reranker1, reranker2, top_k, alpha,
-        )
-        categories = list(dict.fromkeys(r.category for r in law_refs if r.category))
-
-        results.append(ClauseResult(
-            clause_number=clause["clause_number"],
-            clause_text  =clause["clause_text"],
-            law_refs     =law_refs,
-            categories   =categories,
-        ))
-
-    print(f"\n[HoXrefRAG] ✅ 완료")
-    return results
-
-
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# JSON 변환
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-def results_to_json(results: list[ClauseResult]) -> list[dict]:
-    return [asdict(r) for r in results]
-
-
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# 편의: 단일 조항 검색 (개별 RAG)
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-def search_jo(clause_text: str, client: QdrantClient, model: BGEM3FlagModel,
-              laws_ref: dict, reranker1=None, reranker2=None,
-              top_k=TOP_K, alpha=RRF_ALPHA) -> list[LawRef]:
-    return _search_jo(clause_text, client, model, laws_ref, reranker1, reranker2, top_k, alpha)
-
-
-def search_ho(clause_text: str, client: QdrantClient, model: BGEM3FlagModel,
-              laws_ref: dict, reranker1=None, reranker2=None,
-              top_k=TOP_K, alpha=RRF_ALPHA) -> list[LawRef]:
-    return _search_ho(clause_text, client, model, laws_ref, reranker1, reranker2, top_k, alpha)
-
-
-def search_ho_xref(clause_text: str, client: QdrantClient, model: BGEM3FlagModel,
-                   laws_ref: dict, reranker1=None, reranker2=None,
-                   top_k=TOP_K, alpha=RRF_ALPHA) -> list[LawRef]:
-    return _search_ho_xref(clause_text, client, model, laws_ref, reranker1, reranker2, top_k, alpha)
+if __name__ == "__main__":
+    main()

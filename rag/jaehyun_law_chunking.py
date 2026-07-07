@@ -8,7 +8,7 @@ STEP 1 — PyCharm에서 실행
     python rag/jaehyun_law_chunking.py
 
 출력:
-    data/export/chunks.json   ← Colab에 업로드할 파일
+    data/export_old/chunks.json   ← Colab에 업로드할 파일
 """
 
 import json
@@ -22,7 +22,7 @@ from pathlib import Path
 # 설정
 # ──────────────────────────────────────────
 STRUCTURED_DIR = Path("structured")
-EXPORT_DIR     = Path("export")
+EXPORT_DIR     = Path("export_old")
 
 LAW_FILES = [
     {"filename": "지방계약법.json",                                "law_name": "지방계약법",                    "prefix": "LCA"},
