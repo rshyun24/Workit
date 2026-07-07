@@ -12,6 +12,7 @@ from backend_review.io_utils import (
     get_standard_structure,
     normalize_sections_for_review,
 )
+from fewshot_agent.recommendations import build_fewshot_recommendations
 
 
 PRIMARY_ENGINE = "qa_agent"
@@ -97,6 +98,7 @@ def build_payload_from_rule(rule_report: Dict[str, Any]) -> Dict[str, Any]:
         "blocking_issue_count": len(blocking_issues),
         "info_issue_count": len(info_issues),
         "issues": issues,
+        "recommendations": [],
         "decision_stage": "rule_checked",
         "selection_reason": "Rule 기반 qa_agent를 1차 주요 판단으로 사용합니다.",
         "diagnostics": {
@@ -192,18 +194,22 @@ def _add_issue(
     title: str,
     message: str,
     severity: str,
+    source: str | None = None,
 ) -> None:
     issues = list(payload.get("issues") or [])
 
-    issues.append(
-        {
-            "issue_type": issue_type,
-            "code": code,
-            "title": title,
-            "message": message,
-            "severity": severity,
-        }
-    )
+    issue = {
+        "issue_type": issue_type,
+        "code": code,
+        "title": title,
+        "message": message,
+        "severity": severity,
+    }
+
+    if source:
+        issue["source"] = source
+
+    issues.append(issue)
 
     payload["issues"] = issues
     _refresh_issue_counts(payload)
@@ -296,11 +302,12 @@ def apply_fewshot_to_payload(
     fewshot_report: Dict[str, Any],
 ) -> Dict[str, Any]:
     """
-    Few-shot 결과를 diagnostics에만 추가한다.
+    Few-shot 결과를 diagnostics에 추가하고, 부족 항목은 참고 추천으로 노출한다.
 
-    최종 review_status, passed, can_auto_proceed는 변경하지 않는다.
+    Few-shot은 최종 판정, 자동 진행 여부, 최상위 issues를 변경하지 않는다.
     """
     fewshot_status = fewshot_report.get("review_status")
+    section_reviews = fewshot_report.get("fewshot_section_reviews") or []
 
     payload["diagnostics"]["fewshot"] = {
         "engine": OPTIONAL_ENGINE,
@@ -309,12 +316,17 @@ def apply_fewshot_to_payload(
         "average_content_similarity": fewshot_report.get("average_content_similarity"),
         "issue_count": fewshot_report.get("issue_count"),
         "issues": fewshot_report.get("issues") or [],
-        "section_reviews": fewshot_report.get("fewshot_section_reviews") or [],
+        "section_reviews": section_reviews,
     }
+
+    payload["recommendations"] = (
+        list(payload.get("recommendations") or [])
+        + build_fewshot_recommendations(fewshot_report)
+    )
 
     payload["selection_reason"] = (
         "Rule 기반 검수를 1차 주요 판단으로 사용하고, "
-        "Few-shot은 소제목별 내용 적절성을 확인하는 보조 진단으로만 사용합니다."
+        "Few-shot은 소제목별 보완 추천에 참고 진단으로 사용합니다."
     )
 
     return payload
@@ -357,10 +369,17 @@ def review_with_rule_first(
         )
 
         payload["decision_stage"] = "rule_checked_fewshot_referenced"
-        payload["selection_reason"] = (
-            "qa_agent Rule 검수를 최종 판정 기준으로 사용하고, "
-            "Few-shot은 섹션별 참고 진단으로만 제공합니다."
-        )
+
+        if payload.get("recommendations"):
+            payload["selection_reason"] = (
+                "qa_agent Rule 검수를 최종 판정 기준으로 사용하고, "
+                "Few-shot은 섹션별 보완 추천으로만 제공합니다."
+            )
+        else:
+            payload["selection_reason"] = (
+                "qa_agent Rule 검수를 최종 판정 기준으로 사용하고, "
+                "Few-shot은 섹션별 참고 진단으로만 제공합니다."
+            )
 
     else:
         payload["decision_stage"] = "rule_only"
