@@ -236,6 +236,12 @@ def deliverable_upload(request, perf_id):
         from .tasks import sync_deliverable_dates_from_kickoff_task
         sync_deliverable_dates_from_kickoff_task.delay(d.id)
 
+    # 기술적용결과표 파일이 새로 바뀌면, 예전 파일 기준 검증 결과는 더 이상
+    # 유효하지 않으므로 폐기한다 (재분석 전까지는 "분석 시작" 초기 화면부터 다시 노출됨)
+    if d_type == 'tech_apply' and f:
+        from .models import TechApplyCheckResult
+        TechApplyCheckResult.objects.filter(deliverable=d).delete()
+
     return JsonResponse({'status': 'ok', 'filename': d.filename(), 'deliverable_id': d.id})
 
 
@@ -313,6 +319,18 @@ def deliverable_analyze(request, del_id):
         if comparison:
             comparison_data = comparison.comparison_json
 
+    # 기술적용결과표: 이미 실행된 체크 검증 결과가 있으면 새로고침해도 그대로 복원
+    # (파일이 재업로드되면 deliverable_upload에서 이 레코드를 지우므로 여기서 못 찾음)
+    tech_apply_data = None
+    if d.deliverable_type == 'tech_apply':
+        tech_apply_result = getattr(d, 'tech_apply_result', None)
+        if tech_apply_result:
+            tech_apply_data = {
+                'status': 'ok',
+                'analysis_type': 'tech_apply_check',
+                **tech_apply_result.result_json,
+            }
+
     return render(request, 'performance/deliverable_analyze.html', {
         'deliverable': d,
         'contract': d.performance.contract,
@@ -321,6 +339,7 @@ def deliverable_analyze(request, del_id):
         'is_kickoff': is_kickoff,
         'qa_data': qa_data,
         'comparison_data': comparison_data,
+        'tech_apply_data': tech_apply_data,
     })
 
 
@@ -486,6 +505,14 @@ def deliverable_ai_analyze(request, del_id):
             result = check_tech_apply(d.file.path)
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': f'분석 중 오류가 발생했습니다: {e}'}, status=400)
+
+        # 결과를 저장해두면, 화면을 나갔다 다시 들어와도 재분석 없이 복원된다
+        # (파일이 바뀌면 deliverable_upload에서 이 레코드를 지워서 초기화한다)
+        from .models import TechApplyCheckResult
+        TechApplyCheckResult.objects.update_or_create(
+            deliverable=d,
+            defaults={'result_json': result, 'checked_at': timezone.now()},
+        )
 
         return JsonResponse({
             'status': 'ok',

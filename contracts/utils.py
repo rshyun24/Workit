@@ -124,9 +124,14 @@ from datetime import date
 
 def extract_contract_period(text: str):
     """
-    ex.) "2026년 6월 1일부터 2026년 7월 31일까지" 패턴 추출
+    ex.) "2026년 6월 1일부터 2026년 7월 31일까지" 또는
+         "2025년 03월 01일 ~ 2025년 12월 31일" 패턴 추출
     """
-    pattern = r"(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일부터\s*(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일까지"
+    pattern = (
+        r"(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일\s*"
+        r"(?:부터|[~\-])\s*"
+        r"(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일\s*(?:까지)?"
+    )
     match = re.search(pattern, text)
     if match:
         y1, m1, d1, y2, m2, d2 = map(int, match.groups())

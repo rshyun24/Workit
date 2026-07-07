@@ -160,7 +160,7 @@ def document_ai_status(request, task_id):
 def document_complete_review(request, doc_id):
     import re
     from datetime import date
-    from performance.models import Deliverable, Performance
+    from performance.models import Performance
 
     doc = get_object_or_404(ContractDocument, pk=doc_id, contract__created_by=request.user)
     doc.review_status = 'reviewed'
@@ -199,7 +199,7 @@ def document_complete_review(request, doc_id):
                 'message': f'{label} 정보가 없어 이관이 불가합니다.',
             }, status=400)
 
-    # ── 검증 통과 → 이관 처리 ─────────────────────────────────────────────────
+    # 검증 통과 → 이관 처리
     doc.review_status = 'reviewed'
     doc.save()
 
@@ -209,10 +209,13 @@ def document_complete_review(request, doc_id):
         from contracts.utils import extract_text
         text = extract_text(doc.file.path)
 
-        # ── 1. 계약기간 추출 ───────────────────────────────────────────────────
+        # 1. 계약기간 추출
+        # "2026년 6월 1일부터 2026년 7월 31일까지" / "2025년 03월 01일 ~ 2025년 12월 31일" 등
+        # 발주기관마다 표기(부터·까지 문구 vs ~/- 구분자)가 달라 둘 다 인식한다.
         period_pattern = (
-            r"(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일\s*부터\s*"
-            r"(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일\s*까지"
+            r"(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일\s*"
+            r"(?:부터|[~\-])\s*"
+            r"(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일\s*(?:까지)?"
         )
         match = re.search(period_pattern, text)
         if match:
@@ -223,69 +226,13 @@ def document_complete_review(request, doc_id):
 
         contract.save()
 
-        # ── 2. 산출물 일정 추출 ────────────────────────────────────────────────
-        performance, _ = Performance.objects.get_or_create(contract=contract)
+        # 2. Performance 레코드 확보
+        # 이행관리에서 사업수행계획서(kickoff)를 업로드하면 그 안의 '산출물계획' 표를 정확히 파싱해 자동 반영된다.
+        # (performance.deliverable_date_sync.sync_deliverable_dates_from_kickoff)
+        Performance.objects.get_or_create(contract=contract)
 
-        date_patterns = [
-            r"(\d{4})[.\-](\d{1,2})[.\-](\d{1,2})",
-            r"(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일",
-        ]
-
-        deliverable_keywords = [
-            {
-                'type': 'final',
-                'label': '사업추진결과보고서',
-                'keywords': [
-                    '최종결과보고서', '최종 결과보고서', '결과보고서',
-                    '최종보고서', '완료보고서', '결과 보고서', '사업추진결과보고서'
-                ],
-            },
-            {
-                'type': 'tech_apply',
-                'label': '기술 적용 결과표',
-                'keywords': [
-                    '기술적용결과표', '기술 적용 결과표', '기술적용계획표',
-                    '기술 적용 계획표', '기술적용',
-                ],
-            },
-        ]
-
-        for item in deliverable_keywords:
-            due_date = None
-
-            for keyword in item['keywords']:
-                idx = text.find(keyword)
-                if idx == -1:
-                    continue
-
-                surrounding = text[max(0, idx - 20): idx + 150]
-
-                for pattern in date_patterns:
-                    date_match = re.search(pattern, surrounding)
-                    if date_match:
-                        try:
-                            y, m, d = map(int, date_match.groups())
-                            due_date = date(y, m, d)
-                            print(f"[산출물 일정] {item['label']}: {due_date}")
-                        except ValueError:
-                            continue
-                        break
-
-                if due_date:
-                    break
-
-            Deliverable.objects.update_or_create(
-                performance=performance,
-                deliverable_type=item['type'],
-                defaults={'due_date': due_date},
-            )
-            if not due_date:
-                print(f"[산출물 일정] {item['label']}: 추출 실패 → 수동 입력 필요")
-
-        # ── 3. RFP 파싱 비동기 태스크 시작 ← 여기만 새로 추가 ─────────────────
-        #
-        # RFP 파일은 이관 시점에 확정됐다고 볼 수 있으므로,
-        # 이 시점에 파싱을 시작하는 것이 적절하다.
+        # 3. RFP 파싱 비동기 태스크 시작 ← 여기만 새로 추가 
+        # RFP 파일은 이관 시점에 확정됐다고 볼 수 있으므로, 이 시점에 파싱을 시작하는 것이 적절하다.
         # 파싱은 Celery 워커에서 비동기로 돌아가므로 응답 속도에 영향 없음.
         try:
             rfp_doc = contract.documents.filter(doc_type='rfp').first()
@@ -329,10 +276,10 @@ def document_complete_review(request, doc_id):
 def contract_update_info(request, pk):
     """계약 기본 정보 수정"""
     contract = get_object_or_404(Contract, pk=pk, created_by=request.user)
-    contract.project_name  = request.POST.get('project_name', contract.project_name)
-    contract.company_name  = request.POST.get('company_name', contract.company_name)
-    contract.issuing_org   = request.POST.get('issuing_org', contract.issuing_org)
-    contract.budget        = request.POST.get('budget', contract.budget)
+    contract.project_name = request.POST.get('project_name', contract.project_name)
+    contract.company_name = request.POST.get('company_name', contract.company_name)
+    contract.issuing_org = request.POST.get('issuing_org', contract.issuing_org)
+    contract.budget = request.POST.get('budget', contract.budget)
     contract.contact_person = request.POST.get('contact_person', contract.contact_person)
     contract.save()
     return JsonResponse({'status': 'ok'})
@@ -628,18 +575,18 @@ def document_export_pdf(request, doc_id):
 
             card_t = Table(card_rows, colWidths=[22*mm, W - 22*mm])
             card_t.setStyle(TableStyle([
-                ("BACKGROUND",    (0, 0), (0, 0),  TAG_BG[tag]),
-                ("BACKGROUND",    (1, 0), (1, 0),  colors.HexColor("#fafafa")),
-                ("TOPPADDING",    (0, 0), (-1, -1), 5),
+                ("BACKGROUND", (0, 0), (0, 0),  TAG_BG[tag]),
+                ("BACKGROUND", (1, 0), (1, 0),  colors.HexColor("#fafafa")),
+                ("TOPPADDING", (0, 0), (-1, -1), 5),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-                ("LEFTPADDING",   (0, 0), (-1, -1), 8),
-                ("RIGHTPADDING",  (0, 0), (-1, -1), 8),
-                ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
-                # ("BOX",           (0, 0), (-1, -1), 1, TAG_COLOR[tag]),
-                ("LINEABOVE",     (0, 0), (-1, 0),  1, TAG_COLOR[tag]),
-                ("LINEBEFORE",    (0, 0), (0, -1),  1, TAG_COLOR[tag]),
-                ("LINEAFTER",     (-1, 0), (-1, -1), 1, TAG_COLOR[tag]),
-                ("LINEBELOW",     (0, -1), (-1, -1), 1, TAG_COLOR[tag]),
+                ("LEFTPADDING", (0, 0), (-1, -1), 8),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                # ("BOX", (0, 0), (-1, -1), 1, TAG_COLOR[tag]),
+                ("LINEABOVE", (0, 0), (-1, 0),  1, TAG_COLOR[tag]),
+                ("LINEBEFORE", (0, 0), (0, -1),  1, TAG_COLOR[tag]),
+                ("LINEAFTER", (-1, 0), (-1, -1), 1, TAG_COLOR[tag]),
+                ("LINEBELOW", (0, -1), (-1, -1), 1, TAG_COLOR[tag]),
             ]))
             story.append(card_t)
 
@@ -652,12 +599,12 @@ def document_export_pdf(request, doc_id):
                     ))]],
                     colWidths=[W],
                     style=TableStyle([
-                        ("BACKGROUND",    (0,0), (-1,-1), colors.HexColor("#fafafa")),
-                        ("TOPPADDING",    (0,0), (-1,-1), 6),
+                        ("BACKGROUND", (0,0), (-1,-1), colors.HexColor("#fafafa")),
+                        ("TOPPADDING", (0,0), (-1,-1), 6),
                         ("BOTTOMPADDING", (0,0), (-1,-1), 2),
-                        ("LEFTPADDING",   (0,0), (-1,-1), 10),
-                        ("RIGHTPADDING",  (0,0), (-1,-1), 10),
-                        # ("LINEBELOW",     (0,0), (-1,-1), 0.3, colors.HexColor("#e0e0e0")),
+                        ("LEFTPADDING", (0,0), (-1,-1), 10),
+                        ("RIGHTPADDING", (0,0), (-1,-1), 10),
+                        # ("LINEBELOW", (0,0), (-1,-1), 0.3, colors.HexColor("#e0e0e0")),
                     ])
                 ))
 
@@ -683,12 +630,12 @@ def document_export_pdf(request, doc_id):
                 col_w = W / len(badge_row)
                 vt = Table([badge_row], colWidths=[col_w] * len(badge_row))
                 vt.setStyle(TableStyle([
-                    ("BACKGROUND",    (0,0), (0,0),  vb),
-                    ("BACKGROUND",    (1,0), (1,0),  colors.HexColor("#f1f5f9")) if len(badge_row) > 1 else ("SPAN", (0,0),(0,0)),
-                    ("TOPPADDING",    (0,0), (-1,-1), 5),
+                    ("BACKGROUND", (0,0), (0,0),  vb),
+                    ("BACKGROUND", (1,0), (1,0),  colors.HexColor("#f1f5f9")) if len(badge_row) > 1 else ("SPAN", (0,0),(0,0)),
+                    ("TOPPADDING", (0,0), (-1,-1), 5),
                     ("BOTTOMPADDING", (0,0), (-1,-1), 5),
-                    ("LEFTPADDING",   (0,0), (-1,-1), 10),
-                    ("BOX",           (0,0), (-1,-1), 0.3, colors.HexColor("#e0e0e0")),
+                    ("LEFTPADDING", (0,0), (-1,-1), 10),
+                    ("BOX", (0,0), (-1,-1), 0.3, colors.HexColor("#e0e0e0")),
                 ]))
                 story.append(vt)
 
@@ -702,12 +649,12 @@ def document_export_pdf(request, doc_id):
                     ))]],
                     colWidths=[W],
                     style=TableStyle([
-                        ("BACKGROUND",    (0,0), (-1,-1), colors.white),
-                        ("TOPPADDING",    (0,0), (-1,-1), 6),
+                        ("BACKGROUND", (0,0), (-1,-1), colors.white),
+                        ("TOPPADDING", (0,0), (-1,-1), 6),
                         ("BOTTOMPADDING", (0,0), (-1,-1), 8),
-                        ("LEFTPADDING",   (0,0), (-1,-1), 10),
-                        ("RIGHTPADDING",  (0,0), (-1,-1), 10),
-                        ("BOX",           (0,0), (-1,-1), 0.3, colors.HexColor("#e0e0e0")),
+                        ("LEFTPADDING", (0,0), (-1,-1), 10),
+                        ("RIGHTPADDING", (0,0), (-1,-1), 10),
+                        ("BOX", (0,0), (-1,-1), 0.3, colors.HexColor("#e0e0e0")),
                     ])
                 ))
 
@@ -722,12 +669,12 @@ def document_export_pdf(request, doc_id):
                     ))]],
                     colWidths=[W],
                     style=TableStyle([
-                        ("BACKGROUND",   (0,0), (-1,-1), colors.HexColor("#f8f9fa")),
-                        ("TOPPADDING",   (0,0), (-1,-1), 5),
+                        ("BACKGROUND", (0,0), (-1,-1), colors.HexColor("#f8f9fa")),
+                        ("TOPPADDING", (0,0), (-1,-1), 5),
                         ("BOTTOMPADDING",(0,0), (-1,-1), 5),
-                        ("LEFTPADDING",  (0,0), (-1,-1), 12),
+                        ("LEFTPADDING", (0,0), (-1,-1), 12),
                         ("RIGHTPADDING", (0,0), (-1,-1), 10),
-                        ("LINEAFTER",    (0,0), (0,-1),  2, colors.HexColor("#d1d5db")),
+                        ("LINEAFTER", (0,0), (0,-1),  2, colors.HexColor("#d1d5db")),
                     ])
                 ))
 

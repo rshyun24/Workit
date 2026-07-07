@@ -165,3 +165,29 @@ class RFPComparisonResult(models.Model):
  
     def __str__(self):
         return f'비교 결과 — {self.performance} ({self.created_at:%Y-%m-%d})'
+
+
+class TechApplyCheckResult(models.Model):
+    """
+    기술적용결과표(tech_apply) 산출물의 체크박스 정합성 검증 결과.
+
+    - 검증 시점: 산출물 분석 화면에서 "AI 분석 시작" 클릭
+    - 파일이 새로 업로드되면 이 결과는 폐기되고, 재분석 전까지는
+      분석 화면이 "분석 시작" 초기 상태부터 다시 노출된다.
+    """
+
+    deliverable = models.OneToOneField(
+        'Deliverable',
+        on_delete=models.CASCADE,
+        related_name='tech_apply_result',
+    )
+    # check_tech_apply() 반환값 그대로: {"total", "error_count", "items"}
+    result_json = models.JSONField(default=dict, blank=True)
+    checked_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = '기술적용결과표 검증 결과'
+        verbose_name_plural = '기술적용결과표 검증 결과 목록'
+
+    def __str__(self):
+        return f'기술적용결과표 검증 — {self.deliverable}'

@@ -30,6 +30,8 @@
 .issue-list li.warn { background:#fffbeb; color:#92670c; }
 .issue-list li.ok { background:#eff6ff; color:#1e40af; }
 .issue-list li .ic { flex-shrink:0; font-weight:700; }
+.issue-list li.issue-clickable { cursor:pointer; transition:transform .15s ease, box-shadow .15s ease; }
+.issue-list li.issue-clickable:hover { transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,.12); }
 
 /* QA 검수 / RFP 비교 탭 */
 .qa-tabs { display:flex; border-bottom:1.5px solid #eee; margin-bottom:14px; }
@@ -38,6 +40,16 @@
 .qa-tab-btn:disabled { color:#ccc; cursor:not-allowed; }
 .btn-reject { background:#fef2f2; border:1.5px solid #dc2626; color:#dc2626; }
 .btn-reject:hover { background:#fee2e2; }
+
+.tech-apply-highlight {
+  position:absolute; border:2px solid #dc2626; background:rgba(220,38,38,.18);
+  border-radius:3px; pointer-events:none; animation:techApplyPulse 1.4s ease-out 2;
+}
+@keyframes techApplyPulse {
+  0% { box-shadow:0 0 0 0 rgba(220,38,38,.5); }
+  70% { box-shadow:0 0 0 8px rgba(220,38,38,0); }
+  100% { box-shadow:0 0 0 0 rgba(220,38,38,0); }
+}
 </style>
 <div class="analyze-layout">
   <!-- Left: Document viewer -->
@@ -141,11 +153,13 @@
 {% block extra_js %}
 {{ qa_data|json_script:"qa-data" }}
 {{ comparison_data|json_script:"comparison-data" }}
+{{ tech_apply_data|json_script:"tech-apply-data" }}
 <script>
 const DEL_ID = {{ deliverable.id }};
 const IS_KICKOFF = {{ is_kickoff|yesno:"true,false" }};
 const QA_DATA = JSON.parse(document.getElementById('qa-data').textContent);
 let COMPARISON_DATA = JSON.parse(document.getElementById('comparison-data').textContent);
+const TECH_APPLY_DATA = JSON.parse(document.getElementById('tech-apply-data').textContent);
 let ANALYSIS = null;
 
 // ── 1단계: 소제목 매핑 QA 검수 (원본 ↔ 파싱 결과) ──────────────────────────
@@ -360,6 +374,13 @@ if (IS_KICKOFF) {
   initQaStep();
 }
 
+// 기술적용결과표: 이전에 실행한 검증 결과가 남아있으면(파일이 안 바뀌었으면)
+// "분석 시작" 화면을 건너뛰고 바로 복원한다
+if (TECH_APPLY_DATA) {
+  ANALYSIS = TECH_APPLY_DATA;
+  renderTechApplyResults(TECH_APPLY_DATA);
+}
+
 function runAnalysis() {
   const btn = document.getElementById('btnAnalyze');
   if (btn) {
@@ -489,11 +510,12 @@ function renderTechApplyResults(data) {
   if (!errorItems.length) {
     html += `<p style="font-size:13px; color:#888; padding:10px 0;">오류가 발견되지 않았습니다.</p>`;
   } else {
+    window.__techApplyErrorItems = errorItems;
     html += `<ul class="issue-list">`;
-    errorItems.forEach(it => {
+    errorItems.forEach((it, idx) => {
       const marked = CHECK_LABELS.filter(k => it.checked && it.checked[k]);
       const markedText = marked.length ? marked.join(', ') : '없음';
-      html += `<li class="bad">
+      html += `<li class="bad issue-clickable" onclick="jumpToTechApplyItem(${idx})">
         <span class="ic">✕</span>
         <span>
           <div style="font-weight:600; margin-bottom:2px;">${it.page}p · ${escapeHtml(it.item_text)}</div>
@@ -507,6 +529,39 @@ function renderTechApplyResults(data) {
 
   document.getElementById('reviewBody').innerHTML = html;
 }
+
+// 오류 항목 클릭 → 왼쪽 뷰어에서 해당 페이지로 스크롤 + 위치 하이라이트
+window.jumpToTechApplyItem = function(idx) {
+  const it = (window.__techApplyErrorItems || [])[idx];
+  if (!it || !it.bbox) return;
+
+  document.querySelectorAll('.tech-apply-highlight').forEach(el => el.remove());
+
+  const container = document.getElementById('pdfPages');
+  if (!container) return;
+  const pageWrap = container.querySelector(`[data-page="${it.page}"]`);
+  if (!pageWrap) return;
+
+  const PAD_Y = 4; // 텍스트 위아래로 살짝 여유를 두기 위한 패딩(px)
+
+  const place = () => {
+    const img = pageWrap.querySelector('img');
+    if (!img) return;
+    const hl = document.createElement('div');
+    hl.className = 'tech-apply-highlight';
+    hl.style.left = (img.offsetLeft + it.bbox.left / 100 * img.offsetWidth) + 'px';
+    hl.style.top = (img.offsetTop + it.bbox.top / 100 * img.offsetHeight - PAD_Y) + 'px';
+    hl.style.width = (it.bbox.width / 100 * img.offsetWidth) + 'px';
+    hl.style.height = (it.bbox.height / 100 * img.offsetHeight + PAD_Y * 2) + 'px';
+    pageWrap.appendChild(hl);
+    // 페이지 전체가 아니라 하이라이트 박스 자체를 화면 중앙에 오도록 스크롤
+    hl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  const img = pageWrap.querySelector('img');
+  if (img && img.complete) place();
+  else if (img) img.addEventListener('load', place, { once: true });
+};
 
 function escapeHtml(s) {
   return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -585,6 +640,7 @@ window.downloadReport = function() {
       for (let p = 1; p <= total; p++) {
         const wrap = document.createElement('div');
         wrap.style.cssText = 'background:#fff; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,.08); overflow:hidden; position:relative;';
+        wrap.dataset.page = p;
         const pageNum = document.createElement('div');
         pageNum.textContent = `- ${p} -`;
         pageNum.style.cssText = 'text-align:center; font-size:12px; color:#aaa; padding:8px 0;';
