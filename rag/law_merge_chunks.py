@@ -9,17 +9,18 @@ input : 아래 FOLDERS에 지정된 4개 폴더
 output: OUTPUT_DIR 안에 폴더당 파일 1개씩, 총 4개
 
 사용법:
-    python merge_chunks.py
+    python law_merge_chunks.py
 """
+
 import json
 from pathlib import Path
 
 # 폴더 경로 → 출력 파일명
 FOLDERS: dict[Path, str] = {
-    Path("C:/project/Workit/data/structured_jo"):         "chunks_jo.json",
+    Path("C:/project/Workit/data/structured_jo"): "chunks_jo.json",
     Path("C:/project/Workit/data/structured_jo_fixedid"): "chunks_jo_fixedid.json",
-    Path("C:/project/Workit/data/structured"):             "chunks_ho.json",
-    Path("C:/project/Workit/data/structured_fixedid"):     "chunks_ho_fixedid.json",
+    Path("C:/project/Workit/data/structured"): "chunks_ho.json",
+    Path("C:/project/Workit/data/structured_fixedid"): "chunks_ho_fixedid.json",
 }
 
 OUTPUT_DIR = Path("C:/project/Workit/data/merged")

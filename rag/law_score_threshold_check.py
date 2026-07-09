@@ -1,8 +1,8 @@
 """
 Workit - min_score 임계값 잡기용 간단 체크 스크립트
-파일명: rag/yoonha_score_threshold_check.py
+파일명: rag/law_score_threshold_check.py
 
-전체 하이퍼파라미터 sweep이 아니라, 이미 확정된 파라미터(yoonha_law_rag.py의
+전체 하이퍼파라미터 sweep이 아니라, 이미 확정된 파라미터(law_rag_pipeline.py의
 DEFAULT_*)로 gold standard 평가셋을 딱 한 번 검색해서, 정답 chunk와 오답
 chunk의 rerank_score(또는 rrf_score) 분포만 뽑아본다. 이 분포를 보고
 min_score threshold를 감이 아니라 데이터 기반으로 잡기 위한 용도.
@@ -11,7 +11,7 @@ min_score threshold를 감이 아니라 데이터 기반으로 잡기 위한 용
     {"query": "...", "relevant_docs_jo": ["chunk_id1", "chunk_id2", ...]}
 
 사용법:
-    python rag/yoonha_score_threshold_check.py
+    python rag/law_score_threshold_check.py
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ from pathlib import Path
 
 import numpy as np
 
-from yoonha_law_rag import (
+from law_rag_pipeline import (
     DEFAULT_ALPHA,
     DEFAULT_FETCH_K,
     DEFAULT_RERANK_K,
