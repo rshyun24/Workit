@@ -21,6 +21,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import os
 import torch
 from FlagEmbedding import BGEM3FlagModel, FlagReranker
 from qdrant_client import QdrantClient
@@ -28,8 +29,8 @@ from qdrant_client.models import Fusion, FusionQuery, Prefetch, SparseVector
 
 # ── 상수 ──────────────────────────────────────────────────────────
 
-QDRANT_HOST = "localhost"
-QDRANT_PORT = 6333
+QDRANT_HOST = os.environ.get('QDRANT_HOST', 'localhost')
+QDRANT_PORT = int(os.environ.get('QDRANT_PORT', '6333'))
 COLLECTION_JO = "law_kb_jo"
 
 EMBED_MODEL_NAME = "BAAI/bge-m3"

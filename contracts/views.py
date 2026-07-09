@@ -381,6 +381,7 @@ def document_page_image(request, doc_id, page):
         import io, shutil, tempfile
 
         poppler_path = r"C:\poppler-24.08.0\Library\bin"
+        poppler_path = r"C:\poppler-24.08.0\Library\bin" if os.name == 'nt' else None
 
         source_path = _get_pdf_path_for_view(doc)  # HWP면 변환된 PDF 경로, PDF면 원본 그대로
 
@@ -446,6 +447,7 @@ def document_export_pdf(request, doc_id):
     from reportlab.pdfbase.ttfonts import TTFont
     import io
     from datetime import datetime, timezone
+    from pathlib import Path
 
     doc = get_object_or_404(ContractDocument, pk=doc_id, contract__created_by=request.user)
 
@@ -456,8 +458,13 @@ def document_export_pdf(request, doc_id):
 
     # 한국어 폰트 등록 
     # Windows로 변경
-    FONT_PATH = r"C:\Windows\Fonts\malgun.ttf"        # 맑은 고딕
-    FONT_BOLD_PATH = r"C:\Windows\Fonts\malgunbd.ttf" # 맑은 고딕 Bold
+    _bundle = Path(__file__).resolve().parent.parent / "assets" / "fonts"
+    if (_bundle / "NanumGothic.ttf").exists():
+        FONT_PATH, FONT_BOLD_PATH = str(_bundle / "NanumGothic.ttf"), str(_bundle / "NanumGothicBold.ttf")
+    elif os.name == "nt":
+        FONT_PATH, FONT_BOLD_PATH = r"C:\Windows\Fonts\malgun.ttf", r"C:\Windows\Fonts\malgunbd.ttf"
+    else:
+        FONT_PATH, FONT_BOLD_PATH = "/usr/share/fonts/truetype/nanum/NanumGothic.ttf", "/usr/share/fonts/truetype/nanum/NanumGothicBold.ttf"
 
     try:
         if "MalgunGothic" not in pdfmetrics.getRegisteredFontNames():

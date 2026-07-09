@@ -38,8 +38,8 @@ from qdrant_client.models import (
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "merged"
 
-QDRANT_HOST = "localhost"
-QDRANT_PORT = 6333
+QDRANT_HOST = os.environ.get('QDRANT_HOST', 'localhost')
+QDRANT_PORT = int(os.environ.get('QDRANT_PORT', '6333'))
 
 # True: 매번 컬렉션 삭제 후 재생성 (Qdrant를 소스 JSON과 100% 동기화, 고아 데이터 방지)
 # False: 있으면 건너뛰고 upsert만 (빠른 반복 실험용)

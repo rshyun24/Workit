@@ -3,6 +3,9 @@ import logging
 from celery import shared_task
 from django.utils import timezone
 from datetime import timedelta
+import os
+
+SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +55,7 @@ def check_deadlines():
                             f"'{project}'의 {label} 제출 마감일이 "
                             f"{days}일 후({target_date.strftime('%Y년 %m월 %d일')})입니다.\n\n"
                             f"Workit에 접속하여 산출물을 등록해 주세요.\n"
-                            f"http://your-domain.com/performance/"
+                            f"{SITE_URL}/performance/"
                         ),
                         from_email=None,           # ← DEFAULT_FROM_EMAIL 사용
                         recipient_list=[user.email],  # ← 각 사용자 이메일로

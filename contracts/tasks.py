@@ -94,11 +94,15 @@ def analyze_document_task(self, doc_id):
             clause_positions = {}
 
         from qdrant_client import QdrantClient
-        from yoonha_law_rag import load_embed_model, load_reranker, search_jo
+        from law_rag_pipeline import load_embed_model, load_reranker, search_jo
 
         embed_model = load_embed_model()
         reranker = load_reranker()
-        qdrant_client = QdrantClient(url="http://localhost:6333")
+        # qdrant_client = QdrantClient(url="http://localhost:6333")
+        qdrant_client = QdrantClient(
+            host=os.environ.get('QDRANT_HOST', 'localhost'),
+            port=int(os.environ.get('QDRANT_PORT', '6333')),
+        )
 
         clauses = _chunk_contract(file_text)
 

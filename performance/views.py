@@ -13,6 +13,7 @@ from django.utils import timezone
 from accounts.audit import log_audit
 from accounts.models import AuditLog
 from accounts.file_validators import validate_uploaded_file
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -716,6 +717,8 @@ def deliverable_export_pdf(request, del_id):
     from reportlab.pdfbase.ttfonts import TTFont
     import io
     from datetime import datetime, timezone
+    from pathlib import Path
+    
 
     d = get_object_or_404(
         Deliverable, pk=del_id,
@@ -733,8 +736,16 @@ def deliverable_export_pdf(request, del_id):
         return HttpResponse("분석 결과가 없습니다. AI 분석을 먼저 실행해주세요.", status=400)
 
     # 한국어 폰트 등록 (Windows 맑은 고딕)
-    FONT_PATH = r"C:\Windows\Fonts\malgun.ttf"
-    FONT_BOLD_PATH = r"C:\Windows\Fonts\malgunbd.ttf"
+    # FONT_PATH = r"C:\Windows\Fonts\malgun.ttf"
+    # FONT_BOLD_PATH = r"C:\Windows\Fonts\malgunbd.ttf"
+    _bundle = Path(__file__).resolve().parent.parent / "assets" / "fonts"
+    if (_bundle / "NanumGothic.ttf").exists():
+        FONT_PATH, FONT_BOLD_PATH = str(_bundle / "NanumGothic.ttf"), str(_bundle / "NanumGothicBold.ttf")
+    elif os.name == "nt":
+        FONT_PATH, FONT_BOLD_PATH = r"C:\Windows\Fonts\malgun.ttf", r"C:\Windows\Fonts\malgunbd.ttf"
+    else:
+        FONT_PATH, FONT_BOLD_PATH = "/usr/share/fonts/truetype/nanum/NanumGothic.ttf", "/usr/share/fonts/truetype/nanum/NanumGothicBold.ttf"
+
     try:
         if "MalgunGothic" not in pdfmetrics.getRegisteredFontNames():
             pdfmetrics.registerFont(TTFont("MalgunGothic", FONT_PATH))
