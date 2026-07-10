@@ -3,6 +3,9 @@ Django==6.0.5
 argon2-cffi
 
 # AI / ML
+# torch/transformers/peft/FlagEmbedding은 로컬 CPU로 직접 추론할 때만 필요하다.
+# RunPod 원격 추론 서버를 쓰는 경우(EMBED_SERVER_URL/LLM_SERVER_URL 설정, README 참고)엔
+# requests로 HTTP 호출만 하므로 이 무거운 패키지들을 안 깔아도 된다.
 torch
 transformers==4.49.0
 peft==0.19.1
@@ -10,6 +13,7 @@ sentence-transformers
 qdrant-client
 FlagEmbedding
 numpy
+requests
 
 # 문서 처리
 pdfplumber

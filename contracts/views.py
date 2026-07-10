@@ -2,17 +2,24 @@ import json
 import os
 import re
 import sys
+from datetime import timedelta
 from django.core.exceptions import ValidationError
 from django.http import HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from .models import Contract, ContractDocument, AIReviewResult
 from accounts.audit import log_audit
 from accounts.models import AuditLog
 from accounts.file_validators import validate_uploaded_file
+
+# celery worker가 죽는 등 이유로 task가 끝을 못 맺으면 status='processing'인 채로
+# 영원히 멈춘다. 이 시간이 지나면 멈춘 것으로 보고 재분석을 허용한다.
+# (RunPod 기준 실측 소요시간 ~30분 + 여유)
+AI_ANALYSIS_STALE_MINUTES = 60
 
 # rag/hwp_converter.py 등을 import할 수 있도록 프로젝트 루트의 rag 폴더를 경로에 추가
 _RAG_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'rag')
@@ -120,11 +127,20 @@ def document_analyze(request, doc_id):
     except AIReviewResult.DoesNotExist:
         result = None
 
+    # 화면을 나갔다 돌아와도 "분석중" 상태가 유지되도록 status를 함께 확인한다.
+    # started_at이 너무 오래됐으면(celery worker가 죽는 등) 멈춘 것으로 보고
+    # 다시 분석 시작 버튼을 보여준다.
+    is_processing = False
+    if result and result.status == 'processing' and result.started_at:
+        is_processing = timezone.now() - result.started_at <= timedelta(minutes=AI_ANALYSIS_STALE_MINUTES)
+
+    is_done = bool(result and result.status == 'done')
+
     # JSONField(blanks/typos/legal_issues) 안에 Python None/True/False가 섞여 있으면
     # 템플릿에서 {{ ... |safe }}로 그대로 출력될 때 JS 입장에서 깨진 문법(None, True, False)이
     # 되어버린다(JS에는 null/true/false만 있음). json.dumps로 미리 직렬화해서 넘긴다.
     result_json = None
-    if result:
+    if is_done:
         result_json = json.dumps({
             'blanks': result.blanks or [],
             'typos': result.typos or [],
@@ -134,8 +150,11 @@ def document_analyze(request, doc_id):
     return render(request, 'contracts/document_analyze.html', {
         'doc': doc,
         'contract': doc.contract,
-        'result': result,
+        'result': result if is_done else None,
         'result_json': result_json,
+        'is_processing': is_processing,
+        'task_id': result.task_id if is_processing else '',
+        'stale_minutes': AI_ANALYSIS_STALE_MINUTES,
     })
 
 
@@ -144,8 +163,23 @@ def document_analyze(request, doc_id):
 def document_ai_analyze(request, doc_id):
     """AI 분석 태스크 시작"""
     doc = get_object_or_404(ContractDocument, pk=doc_id, contract__created_by=request.user)
+
+    existing = AIReviewResult.objects.filter(document=doc).first()
+    if existing and existing.status == 'processing' and existing.started_at:
+        stale = timezone.now() - existing.started_at > timedelta(minutes=AI_ANALYSIS_STALE_MINUTES)
+        if not stale:
+            # 이미 진행 중인 분석이 있다 — 중복으로 새 task를 띄우지 않고
+            # (같은 GPU를 동시에 두 번 쓰면 충돌한다) 기존 task_id로 폴링을 이어가게 한다.
+            return JsonResponse({'status': 'already_running', 'task_id': existing.task_id})
+
     from contracts.tasks import analyze_document_task
     task = analyze_document_task.delay(doc_id)
+
+    AIReviewResult.objects.update_or_create(
+        document=doc,
+        defaults={'status': 'processing', 'task_id': task.id, 'started_at': timezone.now()},
+    )
+
     return JsonResponse({'status': 'started', 'task_id': task.id})
 
 

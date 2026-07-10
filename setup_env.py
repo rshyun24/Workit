@@ -5,51 +5,10 @@ import os
 import subprocess
 import sys
 
-def patch_exaone_cache():
-    """EXAONE 캐시 파일 패치 (transformers 4.49.0 호환)"""
-    base = os.path.expanduser(
-        r'~/.cache/huggingface/modules/transformers_modules/'
-        r'LGAI-EXAONE/EXAONE-3.5-2.4B-Instruct/'
-        r'ccce25bd39c141fe053e0bc75818a8f5fe962802'
-    )
-
-    # configuration_exaone.py 패치
-    config_path = os.path.join(base, 'configuration_exaone.py')
-    if os.path.exists(config_path):
-        with open(config_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-        if 'from transformers.modeling_rope_utils import RopeParameters' in content and 'try:' not in content:
-            content = content.replace(
-                'from transformers.modeling_rope_utils import RopeParameters',
-                'try:\n    from transformers.modeling_rope_utils import RopeParameters\nexcept ImportError:\n    class RopeParameters: pass'
-            )
-            with open(config_path, 'w', encoding='utf-8') as f:
-                f.write(content)
-            print('✅ configuration_exaone.py 패치 완료')
-        else:
-            print('✅ configuration_exaone.py 이미 패치됨')
-    else:
-        print('⚠️  configuration_exaone.py 없음 - 모델 첫 실행 시 자동 다운로드 후 다시 실행하세요')
-
-    # modeling_exaone.py 패치
-    model_path = os.path.join(base, 'modeling_exaone.py')
-    if os.path.exists(model_path):
-        with open(model_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-        target = 'from transformers.integrations import use_kernel_forward_from_hub, use_kernel_func_from_hub, use_kernelized_func'
-        if target in content and 'try:' not in content.split(target)[0].split('\n')[-2]:
-            content = content.replace(
-                target,
-                'try:\n    from transformers.integrations import use_kernel_forward_from_hub, use_kernel_func_from_hub, use_kernelized_func\nexcept ImportError:\n    def use_kernel_forward_from_hub(*a, **kw): return lambda f: f\n    def use_kernel_func_from_hub(*a, **kw): return lambda f: f\n    def use_kernelized_func(*a, **kw): return lambda f: f'
-            )
-            with open(model_path, 'w', encoding='utf-8') as f:
-                f.write(content)
-            print('✅ modeling_exaone.py 패치 완료')
-        else:
-            print('✅ modeling_exaone.py 이미 패치됨')
-    else:
-        print('⚠️  modeling_exaone.py 없음 - 모델 첫 실행 시 자동 다운로드 후 다시 실행하세요')
-
+# 한국어 Windows 콘솔 기본 코드페이지(cp949)는 ✅/❌ 같은 이모지를 못 담아서
+# 리다이렉션(> log.txt) 등으로 콘솔 코드페이지 자동감지가 안 되면 print()에서 죽는다.
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8')
 
 def patch_flagembedding():
     """FlagEmbedding dtype 인자 패치 (transformers 4.49.0 호환)
@@ -141,17 +100,25 @@ def check_qdrant_docker():
 
 
 def check_law_kb_export():
-    """law_kb 구축용 원본 데이터 파일 확인 (yoonha_law_upsert.py 재료)"""
-    export_dir = os.path.join(os.path.dirname(__file__), 'data', 'export')
-    required = ['chunks.json', 'vectors.npz', 'sparse_weights.json']
-    missing = [f for f in required if not os.path.exists(os.path.join(export_dir, f))]
+    """law_kb 구축용 원본 데이터 파일 확인 (rag/law_upsert_qdrant.py의 DATA_DIR/DATASETS와 동일 경로).
+
+    data/export/{chunks,vectors,sparse_weights}.json은 jo/ho 분리 이전의 옛 포맷
+    파일이라 지금은 안 쓰인다 — 실제로 law_upsert_qdrant.py가 읽는 건 data/merged/
+    안의 *_jo_fixedid / *_ho_fixedid 파일들이라 그걸 확인한다.
+    """
+    merged_dir = os.path.join(os.path.dirname(__file__), 'data', 'merged')
+    required = [
+        'chunks_jo_fixedid.json', 'vectors_jo_fixedid.npz', 'sparse_weights_jo_fixedid.json',
+        'chunks_ho_fixedid.json', 'vectors_ho_fixedid.npz', 'sparse_weights_ho_fixedid.json',
+    ]
+    missing = [f for f in required if not os.path.exists(os.path.join(merged_dir, f))]
 
     if not missing:
-        print('✅ data/export/ 법령 KB 원본 파일 모두 존재')
-        print('   (Qdrant law_kb 컬렉션이 비어있으면 python rag/yoonha_law_upsert.py 실행)')
+        print('✅ data/merged/ 법령 KB 원본 파일(jo/ho) 모두 존재')
+        print('   (Qdrant law_kb_jo/law_kb_ho 컬렉션이 비어있으면 python rag/law_upsert_qdrant.py 실행)')
     else:
-        print(f'❌ data/export/ 에 다음 파일 없음: {", ".join(missing)}')
-        print('   구글 드라이브에서 받아서 data/export/ 에 넣기')
+        print(f'❌ data/merged/ 에 다음 파일 없음: {", ".join(missing)}')
+        print('   구글 드라이브 "청킹 임베딩" 폴더에서 받아서 data/merged/ 에 넣기')
 
 
 def check_redis():
@@ -178,21 +145,79 @@ def check_poppler():
 
 
 def check_model():
-    """모델 파일 확인"""
-    model_path = os.path.join(os.path.dirname(__file__), 'data', 'jihye_sft', 'model_output', 'adapter_config.json')
+    """LoRA 어댑터 파일 확인 (rag/jihye_inference.py의 ADAPTER_PATH와 동일 경로).
+
+    RunPod 원격 추론 모드를 쓰면 어댑터는 RunPod 쪽에만 있으면 되고 로컬엔 없어도 된다
+    (EMBED_SERVER_URL/LLM_SERVER_URL 설정 시 [0]에서 안내).
+    """
+    if os.environ.get('EMBED_SERVER_URL') and os.environ.get('LLM_SERVER_URL'):
+        print('✅ 원격 추론 모드라 로컬 모델 파일은 필요 없음 (RunPod에 있음)')
+        return
+
+    model_path = os.path.join(os.path.dirname(__file__), 'models', 'workit_output', 'adapter_config.json')
     if os.path.exists(model_path):
-        print('✅ 모델 파일 존재')
+        print('✅ LoRA 어댑터 파일 존재 (models/workit_output/)')
     else:
-        print('❌ 모델 파일 없음 - 구글 드라이브에서 model_output 폴더를 data/jihye_sft/model_output/ 에 넣기')
+        print('❌ LoRA 어댑터 없음 - 구글 드라이브에서 workit_output 폴더를 models/workit_output/ 에 넣기')
+
+
+def check_remote_inference():
+    """RunPod 원격 추론 서버 연동 확인.
+
+    BGE-M3 임베더/리랭커 + kanana LLM을 로컬 CPU에서 직접 로드하는 대신, RunPod GPU에
+    이미 띄워둔 추론 서버(embed_server:8000, llm_server:8002)에 HTTP로 위임하는 옵션이다.
+    EMBED_SERVER_URL/LLM_SERVER_URL 둘 다 설정하면 자동으로 이 모드로 전환된다
+    (contracts/tasks.py의 USE_REMOTE_INFERENCE). CPU보다 훨씬 빠르고, 이 모드를 쓰면
+    아래 [1][2]의 로컬 모델 패치도 필요 없다.
+    """
+    embed_url = os.environ.get('EMBED_SERVER_URL', '').strip()
+    llm_url = os.environ.get('LLM_SERVER_URL', '').strip()
+
+    if embed_url and llm_url:
+        print(f'✅ 원격 추론 모드 사용 중 (EMBED_SERVER_URL={embed_url}, LLM_SERVER_URL={llm_url})')
+        print('   이 모드에서는 아래 [1][2] 로컬 모델 패치가 필요 없습니다 (RunPod에서 이미 로드됨)')
+    else:
+        print('❌ EMBED_SERVER_URL / LLM_SERVER_URL 미설정 - 로컬 CPU로 직접 추론합니다 (문서 1건에 수십 분)')
+        print('   RunPod GPU로 대신 돌리려면 (팀 공용 pod 접속):')
+        print('   1. 본인 SSH 공개키를 RunPod 계정에 등록 (없으면: ssh-keygen -t ed25519)')
+        print('   2. pod SSH 접속 정보(호스트/포트) 팀장에게 요청 후, 로컬에서 포트포워딩 터널을')
+        print('      계속 띄워둘 터미널 하나 확보:')
+        print('      ssh -f -N -L 18000:localhost:8000 -L 18002:localhost:8002 \\')
+        print('        -p <포트> -i ~/.ssh/id_ed25519 root@<IP>')
+        print('   3. celery worker를 켜는 터미널에서 worker 실행 전에:')
+        print('      export EMBED_SERVER_URL="http://localhost:18000"')
+        print('      export LLM_SERVER_URL="http://localhost:18002"')
+        print('   ※ LLM 서버는 요청을 한 번에 하나씩만 처리합니다(동시 요청 시 GPU 상태가 꼬여서')
+        print('     직렬화해둠) — 팀원 여러 명이 동시에 분석을 돌리면 뒷사람은 대기하게 됩니다.')
+        print('   자세한 셋업 배경/트러블슈팅은 Notion "Workit" 페이지 참고')
 
 
 def check_qdrant():
-    """Qdrant 벡터스토어 확인"""
-    qdrant_path = os.path.join(os.path.dirname(__file__), 'vectorstore', 'qdrant_storage', 'collection')
-    if os.path.exists(qdrant_path):
-        print('✅ Qdrant 벡터스토어 존재')
-    else:
-        print('❌ Qdrant 없음 - 구글 드라이브에서 qdrant_storage 폴더를 vectorstore/ 에 넣기')
+    """Qdrant law_kb_jo 컬렉션에 실제 데이터가 들어있는지 확인.
+
+    Qdrant 자체는 로컬 폴더가 아니라 Docker 컨테이너로 띄운다(컨테이너 실행 여부는
+    [8] check_qdrant_docker에서 별도 확인) — 컨테이너가 떠 있어도 컬렉션이 비어있을
+    수 있어서 API로 직접 포인트 개수를 확인한다.
+    """
+    import json as _json
+    import urllib.request
+    import urllib.error
+
+    host = os.environ.get('QDRANT_HOST', 'localhost')
+    port = os.environ.get('QDRANT_PORT', '6333')
+    url = f'http://{host}:{port}/collections/law_kb_jo'
+    try:
+        with urllib.request.urlopen(url, timeout=5) as resp:
+            data = _json.loads(resp.read())
+        count = data.get('result', {}).get('points_count', 0)
+        if count > 0:
+            print(f'✅ Qdrant law_kb_jo 컬렉션에 {count}개 포인트 존재')
+        else:
+            print('❌ Qdrant law_kb_jo 컬렉션이 비어있음 - python rag/law_upsert_qdrant.py 로 적재 필요')
+    except (urllib.error.URLError, ConnectionError, TimeoutError):
+        print(f'❌ Qdrant({url}) 연결 실패 - [7]에서 컨테이너가 떠 있는지 먼저 확인하세요')
+    except Exception as e:
+        print(f'⚠️  Qdrant 컬렉션 확인 중 오류: {e}')
 
 
 if __name__ == '__main__':
@@ -200,31 +225,31 @@ if __name__ == '__main__':
     print('Workit 환경 세팅 스크립트')
     print('=' * 50)
 
-    print('\n[1] EXAONE 캐시 패치')
-    patch_exaone_cache()
+    print('\n[0] 원격 추론(RunPod) 사용 여부 확인')
+    check_remote_inference()
 
-    print('\n[2] FlagEmbedding(BGE-M3) 패치')
+    print('\n[1] FlagEmbedding(BGE-M3) 패치')
     patch_flagembedding()
 
-    print('\n[3] Redis 확인')
+    print('\n[2] Redis 확인')
     check_redis()
 
-    print('\n[4] poppler 확인')
+    print('\n[3] poppler 확인')
     check_poppler()
 
-    print('\n[5] LibreOffice (HWP 변환) 확인')
+    print('\n[4] LibreOffice (HWP 변환) 확인')
     check_libreoffice()
 
-    print('\n[6] 모델 파일 확인')
+    print('\n[5] 모델 파일 확인')
     check_model()
 
-    print('\n[7] Qdrant 벡터스토어 확인')
+    print('\n[6] Qdrant 벡터스토어 확인')
     check_qdrant()
 
-    print('\n[8] Qdrant Docker 컨테이너 확인')
+    print('\n[7] Qdrant Docker 컨테이너 확인')
     check_qdrant_docker()
 
-    print('\n[9] 법령 KB 원본 데이터 확인')
+    print('\n[8] 법령 KB 원본 데이터 확인')
     check_law_kb_export()
 
     print('\n' + '=' * 50)

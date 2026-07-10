@@ -54,7 +54,7 @@
         <!-- Show existing result -->
         <div id="reviewResults"></div>
       {% else %}
-        <!-- Initial state -->
+        <!-- Initial / processing state -->
         <div class="ai-intro" id="aiIntro">
           <div class="ai-intro-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
@@ -62,10 +62,17 @@
           <h3>AI 분석 결과</h3>
           <p>sLLM이 문서를 분석해 <strong>확인이 필요한 항목</strong>만 표시합니다.<br><span style="white-space:nowrap;">법률 항목은 근거만 제시하며 수정안은 제공하지 않습니다.</span></p>
           <p>Workit 은 AI이며 실수할 수 있습니다.<br><span style="display:inline-block; padding-left:12px;">응답을 다시 한번 확인해 주세요.</span></p>
+          {% if is_processing %}
+          <button class="btn btn-primary" id="btnAnalyze" disabled>
+            <span class="spinner"></span> 분석 중...
+          </button>
+          <p style="font-size:12px; color:var(--text-hint);">화면을 나가도 분석은 계속 진행됩니다. 완료되면 알림으로 알려드려요.</p>
+          {% else %}
           <button class="btn btn-primary" id="btnAnalyze" onclick="runAnalysis()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
             계약서 AI 분석 시작
           </button>
+          {% endif %}
         </div>
       {% endif %}
     </div>
@@ -99,11 +106,17 @@
 </style>
 <script>
 const DOC_ID = {{ doc.id }};
+const AI_ANALYSIS_STALE_MS = {{ stale_minutes }} * 60 * 1000;
 
 {% if result %}
 window.onload = () => {
   const data = JSON.parse('{{ result_json|escapejs }}');
   renderResults(data.blanks, data.typos, data.legal_issues);
+};
+{% elif is_processing %}
+window.onload = () => {
+  // 화면을 나갔다 다시 들어온 경우 — DB에 저장해둔 task_id로 폴링을 이어간다.
+  pollTaskStatus('{{ task_id }}', Date.now());
 };
 {% endif %}
 
@@ -120,14 +133,31 @@ function runAnalysis() {
   })
   .then(r => r.json())
   .then(data => {
-    if (data.status === 'started') {
-      pollTaskStatus(data.task_id);
+    if (data.status === 'started' || data.status === 'already_running') {
+      pollTaskStatus(data.task_id, Date.now());
     }
   });
 }
 
-function pollTaskStatus(taskId) {
+function resetAnalyzeButton(message) {
+  const btn = document.getElementById('btnAnalyze');
+  if (!btn) return;
+  btn.disabled = false;
+  btn.onclick = runAnalysis;
+  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> ${message || '계약서 AI 분석 시작'}`;
+}
+
+function pollTaskStatus(taskId, startedAtMs) {
   const interval = setInterval(() => {
+    // celery worker가 죽는 등으로 task가 끝을 못 맺으면 상태가 영원히 progress/pending에
+    // 머무를 수 있다 — 서버 쪽 stale 기준(AI_ANALYSIS_STALE_MS)과 맞춰 폴링도 포기하고
+    // 다시 시도할 수 있게 버튼을 되돌려준다.
+    if (Date.now() - startedAtMs > AI_ANALYSIS_STALE_MS) {
+      clearInterval(interval);
+      resetAnalyzeButton('응답이 없습니다 · 다시 시도');
+      return;
+    }
+
     fetch(`/contracts/task/${taskId}/status/`)
       .then(r => r.json())
       .then(data => {
@@ -144,6 +174,7 @@ function pollTaskStatus(taskId) {
         } else if (data.state === 'error') {
           clearInterval(interval);
           alert('분석 중 오류가 발생했습니다: ' + data.message);
+          resetAnalyzeButton();
         }
       });
   }, 3000); // 3초마다 상태 확인
@@ -223,8 +254,10 @@ function renderResults(blanks, typos, legal) {
       const 유형 = 유형match ? 유형match[1].trim() : '';
       const 근거 = 근거match ? 근거match[1].trim() : ref;
 
-      const 판정색 = { '정상': '#16a34a', '누락': '#d97706', '위반': '#dc2626' };
-      const 판정bg  = { '정상': '#f0fdf4', '누락': '#fffbeb', '위반': '#fef2f2' };
+      // sLLM이 실제로 내는 판정값은 '일치'/'불일치'/'판단보류'(산출물 비교는 '충족' 계열).
+      // '정상'/'누락'/'위반'은 다른 화면에서 쓰던 라벨이라 호환을 위해 같이 남겨둔다.
+      const 판정색 = { '정상': '#16a34a', '일치': '#16a34a', '충족': '#16a34a', '누락': '#d97706', '판단보류': '#d97706', '위반': '#dc2626', '불일치': '#dc2626' };
+      const 판정bg  = { '정상': '#f0fdf4', '일치': '#f0fdf4', '충족': '#f0fdf4', '누락': '#fffbeb', '판단보류': '#fffbeb', '위반': '#fef2f2', '불일치': '#fef2f2' };
       const color = 판정색[판정] || '#6b7280';
       const bg    = 판정bg[판정]  || '#f9fafb';
 

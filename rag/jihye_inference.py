@@ -17,7 +17,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ADAPTER_PATH = os.path.join(BASE_DIR, "models", "workit_output")
 
 # LOAD_IN_4BIT = True       # GPU 작으면 True(4bit), 여유 있으면 False(bf16)
-LOAD_IN_4BIT = False     # 4bit 끄면 bitsandbytes 불필요 → bf16 로드
+LOAD_IN_4BIT = True     # 4bit 끄면 bitsandbytes 불필요 → bf16 로드
 K_CONTEXT    = 3          # 참고조항 개수 (학습과 동일)
 TEXT_MAX     = 300        # 참고조항 본문 컷 (학습과 동일)
 
