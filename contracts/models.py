@@ -74,11 +74,24 @@ class ContractDocument(models.Model):
 
 
 class AIReviewResult(models.Model):
+    STATUS_CHOICES = [
+        ('idle',       '대기'),
+        ('processing', '분석중'),
+        ('done',       '완료'),
+        ('failed',     '실패'),
+    ]
+
     document = models.OneToOneField(ContractDocument, on_delete=models.CASCADE, related_name='review_result')
     blanks = models.JSONField('빈칸/미기재', default=list)
     typos = models.JSONField('오탈자', default=list)
     legal_issues = models.JSONField('법률 관련', default=list)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    # 분석 화면을 나갔다가 돌아와도 진행 상태를 보여주기 위한 필드.
+    # task_id는 브라우저 JS 변수에만 있으면 새로고침 시 사라지므로 DB에 같이 저장한다.
+    status = models.CharField('분석 상태', max_length=20, choices=STATUS_CHOICES, default='idle')
+    task_id = models.CharField('Celery task id', max_length=255, blank=True, default='')
+    started_at = models.DateTimeField('분석 시작 시각', null=True, blank=True)
 
     class Meta:
         verbose_name = 'AI 검토 결과'

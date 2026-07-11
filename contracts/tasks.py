@@ -3,35 +3,51 @@ import re
 import sys
 from celery import shared_task
 
-MAX_CLAUSES = 3  # 시연용 조항 수 제한 (CPU 환경)
+# RunPod 등 원격 GPU 추론 서버 URL (SSH 로컬 포트포워딩 경유, 예: http://localhost:18000).
+# 임베딩/리랭커(BGE-M3 계열)와 LLM(kanana)은 서로 다른 transformers 버전을 요구해
+# RunPod에서 별도 venv·별도 포트의 서버 두 개로 띄운다. 둘 다 비어있으면 기존처럼
+# 로컬에서 직접 모델을 로드해 추론한다.
+EMBED_SERVER_URL = os.environ.get('EMBED_SERVER_URL', '').strip() or None
+LLM_SERVER_URL = os.environ.get('LLM_SERVER_URL', '').strip() or None
+USE_REMOTE_INFERENCE = bool(EMBED_SERVER_URL and LLM_SERVER_URL)
+
+_CLAUSE_HEADER_RE = re.compile(r"제(\d+)조(?:의(\d+))?(?:\s*\([^)]*\))?")
 
 
 def _chunk_contract(text: str) -> list[dict]:
     """
     계약서 텍스트를 '제N조(...)' 단위 조항으로 분할한다.
-    새 yoonha_law_rag.search_jo()는 조항 하나(query_text)씩 검색하는
+    새 law_rag_pipeline.search_jo()는 조항 하나(query_text)씩 검색하는
     순수 검색 함수라, 계약서 전체를 조항 단위로 쪼개는 건 호출하는
     쪽(여기)의 책임이다. (rag/pdfver_yoonha_contract_rag.py의 예전
     chunk_contract()와 동일 로직 — 그 모듈은 없는 패키지에 의존해서 못 씀)
+
+    "제N조" 패턴은 실제 조항 헤더 말고도 본문 중간의 법령 인용(예: "소프트웨어진흥법
+    제38조에 근거") 이나 요약표의 오기재("지식재산권 제23조(지식재산권)에서 정하는
+    바에...")에도 나타난다. 이런 인용은 지금까지 확정된 조항 번호와 이어지지 않으므로,
+    직전에 확정한 조항 번호와 같거나(같은 조의 하위 항) 정확히 다음 번호일 때만
+    진짜 헤더로 인정한다 — 실제 계약서 조항은 항상 1부터 순차적으로 증가한다.
     """
     text = text.strip()
-    pattern = r"(제\d+조(?:의\d+)?(?:\s*\([^)]*\))?)"
-    parts = re.split(pattern, text)
+
+    matches = []
+    last_num = 0
+    for m in _CLAUSE_HEADER_RE.finditer(text):
+        num = int(m.group(1))
+        if num == last_num or num == last_num + 1:
+            matches.append(m)
+            last_num = num
 
     clauses = []
-    i = 1
-    while i < len(parts) - 1:
-        raw_header = parts[i].strip()
-        body = parts[i + 1].strip()
-
-        match = re.match(r"(제\d+조(?:의\d+)?)", raw_header)
-        clause_number = match.group(1) if match else raw_header
+    for idx, m in enumerate(matches):
+        end = matches[idx + 1].start() if idx + 1 < len(matches) else len(text)
+        raw_header = m.group(0).strip()
+        body = text[m.end():end].strip()
+        clause_number = f"제{m.group(1)}조" + (f"의{m.group(2)}" if m.group(2) else "")
         clause_text = f"{raw_header} {body}".strip()
 
         if body:
             clauses.append({'clause_number': clause_number, 'clause_text': clause_text})
-
-        i += 2
 
     if not clauses:
         paragraphs = [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
@@ -94,11 +110,17 @@ def analyze_document_task(self, doc_id):
             clause_positions = {}
 
         from qdrant_client import QdrantClient
-        from law_rag_pipeline import load_embed_model, load_reranker, search_jo
+        from law_rag_pipeline import search_jo, DEFAULT_MIN_SCORE
 
-        embed_model = load_embed_model()
-        reranker = load_reranker()
-        # qdrant_client = QdrantClient(url="http://localhost:6333")
+        if USE_REMOTE_INFERENCE:
+            from remote_inference_client import RemoteEmbedModel, RemoteReranker
+            embed_model = RemoteEmbedModel(EMBED_SERVER_URL)
+            reranker = RemoteReranker(EMBED_SERVER_URL)
+        else:
+            from law_rag_pipeline import load_embed_model, load_reranker
+            embed_model = load_embed_model()
+            reranker = load_reranker()
+
         qdrant_client = QdrantClient(
             host=os.environ.get('QDRANT_HOST', 'localhost'),
             port=int(os.environ.get('QDRANT_PORT', '6333')),
@@ -169,11 +191,26 @@ def analyze_document_task(self, doc_id):
                 item['page'] = None
                 item['bbox'] = None
 
-        from jihye_inference import load_model as load_llm_model, predict
+        if USE_REMOTE_INFERENCE:
+            from remote_inference_client import remote_predict
 
-        llm_model, tokenizer = load_llm_model()
+            def predict(item, *_):
+                return remote_predict(item, LLM_SERVER_URL)
 
-        filtered = [r for r in rag_results if r.get('law_refs')][:MAX_CLAUSES]
+            llm_model, tokenizer = None, None
+        else:
+            from jihye_inference import load_model as load_llm_model, predict
+
+            llm_model, tokenizer = load_llm_model()
+
+        # law_refs가 있어도 search_jo()의 fallback(관련 조문이 하나도 threshold를
+        # 못 넘기면 그냥 top_k를 반환)때문에 사실상 모든 조항이 law_refs를 갖게 된다.
+        # 개수로 자르는 대신, 실제로 min_score를 넘긴 "진짜 관련 법령"이 있는
+        # 조항만 LLM 판정으로 넘긴다 — fallback으로 채워진 저품질 후보는 제외.
+        def _has_relevant_law_ref(item):
+            return any((ref.get('score') or 0) >= DEFAULT_MIN_SCORE for ref in item.get('law_refs', []))
+
+        filtered = [r for r in rag_results if _has_relevant_law_ref(r)]
         total = len(filtered)
         done = 0
 
@@ -187,7 +224,8 @@ def analyze_document_task(self, doc_id):
                 'page': item.get('page'),
                 'bbox': item.get('bbox'),
                 'fragments': item.get('fragments'),
-                'prediction': prediction,
+                # parse_to_workit()은 prediction을 문자열(sLLM 판정 원문)로 기대한다.
+                'prediction': prediction.get('raw', ''),
             })
             done += 1
             self.update_state(
@@ -207,14 +245,32 @@ def analyze_document_task(self, doc_id):
         )
 
     # LLM 단계가 실패해도 규칙 기반 빈칸 검사 결과(blanks)는 항상 저장·반환한다
+    # status='done'으로 바꿔야 분석화면이 "분석중" 대신 결과를 보여준다.
     AIReviewResult.objects.update_or_create(
         document=doc,
         defaults={
             'blanks': blanks,
             'typos': typos,
             'legal_issues': legal_issues,
+            'status': 'done',
         }
     )
+
+    # 화면을 나가 있어도 분석은 celery worker에서 계속 진행되므로, 완료 시점에
+    # 알림을 띄워 사용자가 다시 들어와서 결과를 확인할 수 있게 한다.
+    try:
+        from performance.models import Notification
+
+        owner = doc.contract.created_by
+        if owner.notification_enabled:
+            Notification.objects.create(
+                user=owner,
+                message=f'AI 분석이 완료되었습니다: {doc}',
+                url=f'/contracts/document/{doc_id}/analyze/',
+            )
+    except Exception:
+        import traceback
+        print(f'[analyze_document_task] 완료 알림 생성 실패 (doc_id={doc_id}):\n{traceback.format_exc()}')
 
     return {
         'status': 'ok',

@@ -24,6 +24,7 @@ Point id는 chunk_id 해시값(결정론적) — 배열 순서 아님, 매칭은
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import numpy as np
